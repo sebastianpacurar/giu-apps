@@ -3,43 +3,65 @@ package main
 import (
 	"fmt"
 	"github.com/AllenDang/giu"
+	"imgui-based-app/components"
 )
 
 var (
-	apps = map[string]bool{"Geography": false, "Quiz Game": false}
+	Apps = map[string]bool{"Geography": false, "Quiz Game": false}
 )
 
 func loop() {
-	giu.SingleWindowWithMenuBar().Layout()
-	giu.MainMenuBar().Layout(
-		giu.Menu("Apps").Layout(
-			giu.MenuItem("Geography").OnClick(func() {
-				apps["Geography"] = !apps["Geography"]
-			}),
-			giu.MenuItem("Quiz Game").OnClick(func() {
-				apps["Quiz Game"] = !apps["Quiz Game"]
-			}),
-			giu.Menu("Text Editor").Layout(
-				giu.Menu("New").Layout(
-					giu.MenuItem("Text Document"),
-					giu.MenuItem("Excel"),
+
+	/// this MUST BE RAN ONLY ONCE, at startup! so it can limit the number of requests
+	///   will fix in the future, when a sqlite concept will be prototyped.
+	if !components.Countries.IsUpdated {
+		err := components.InitCountries()
+		if err != nil {
+			return
+		}
+	}
+
+	/// the main window of the app
+	giu.SingleWindowWithMenuBar().Layout(
+		giu.MenuBar().Layout(
+			giu.Menu("Apps").Layout(
+				giu.MenuItem("Geography").OnClick(func() {
+					Apps["Geography"] = !Apps["Geography"]
+				}),
+				giu.MenuItem("Quiz Game").OnClick(func() {
+					Apps["Quiz Game"] = !Apps["Quiz Game"]
+				}),
+				giu.Menu("Text Editor").Layout(
+					giu.Menu("New").Layout(
+						giu.MenuItem("Text Document"),
+						giu.MenuItem("Excel"),
+					),
+					giu.MenuItem("Open"),
 				),
-				giu.MenuItem("Open"),
-			),
-			giu.Menu("Help").Layout(
-				giu.MenuItem("About"),
+				giu.Menu("Help").Layout(
+					giu.MenuItem("About"),
+				),
 			),
 		),
-	).Build()
+	)
 
-	for k, v := range apps {
-		if !v {
-			giu.Window(k).IsOpen(&v).Flags(giu.WindowFlagsNone).Layout(
-				giu.Label(fmt.Sprintf("This is the %s Window", k)),
-				giu.Button("toggle-window").OnClick(func() {
-					apps[k] = !v
-				}),
-			)
+	for k, v := range Apps {
+		if v {
+			switch window := k; window {
+			case "Geography":
+				geoWin := giu.Window(k)
+				geoWin.IsOpen(&v).Flags(giu.WindowFlagsNone).Layout(
+					components.CountriesTable(),
+				)
+				break
+			case "Quiz Game":
+				giu.Window(k).IsOpen(&v).Flags(giu.WindowFlagsNone).Layout(
+					giu.Label(fmt.Sprintf("This is the %s Window", k)),
+					giu.Button("toggle-window").OnClick(func() {
+						Apps[k] = !v
+					}),
+				)
+			}
 		}
 	}
 }
