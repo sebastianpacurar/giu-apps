@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	Countries = &Country{}
-	Details   = Countries.Details
+	CountryRef = &Country{}
+	Details    = CountryRef.Details
 )
 
 type Country struct {
@@ -19,6 +19,7 @@ type Country struct {
 	IsUpdated bool
 }
 
+// CountryInfo - All details about a country, grabbed through InitCountries() function
 type CountryInfo struct {
 	Name           string            `json:"name"`
 	TopLevelDomain []string          `json:"topLevelDomain"`
@@ -55,29 +56,43 @@ type Language struct {
 	NativeName string `json:"nativeName"`
 }
 
+// buildCountryRow - represents one country as a row in the table, the first row being the table head
+///Returns all the countries as the rows of the table,
 func buildCountryRow() []*giu.TableRowWidget {
 	entries := make([]*giu.TableRowWidget, len(Details))
 	for i := range entries {
-		entries[i] = giu.TableRow(
-			giu.Label(fmt.Sprintf("%d", i)),
-			giu.Label(Details[i].Name),
-			giu.Label(Details[i].NativeName),
-			giu.Label(Details[i].Alpha2Code),
-			giu.Label(Details[i].Subregion),
-			giu.Label(Details[i].Capital),
-			giu.Label(Details[i].Flag),
-			giu.Label(Details[i].NumericCode),
-		)
+		if i == 0 {
+			entries[i] = giu.TableRow(
+				giu.Label("Count"),
+				giu.Label("Name"),
+				giu.Label("Capital"),
+				giu.Label("Alpha 2 Code"),
+				giu.Label("Subregion"),
+				giu.Label("Numeric Code"),
+			).Flags(giu.TableRowFlagsHeaders).MinHeight(80).
+				BgColor(&(color.RGBA{R: 200, G: 100, B: 100, A: 255}))
+		} else {
+			entries[i] = giu.TableRow(
+				giu.Label(fmt.Sprintf("%d", i)),
+				giu.Label(Details[i].Name),
+				giu.Label(Details[i].Capital),
+				giu.Label(Details[i].Alpha2Code),
+				giu.Label(Details[i].Subregion),
+				giu.Label(Details[i].NumericCode),
+			).MinHeight(80)
+		}
 	}
-
-	entries[0].BgColor(&(color.RGBA{R: 200, G: 100, B: 100, A: 255}))
 	return entries
 }
 
+// CountriesTable - builds the table in one shot using the spread operator,
+///and the TableRowWidgets obtained from buildCountryRow
 func CountriesTable() *giu.TableWidget {
 	return giu.Table().Freeze(0, 1).FastMode(true).Rows(buildCountryRow()...)
 }
 
+// InitCountries - runs only once at startup, to populate the Details list of structs.
+///after it gets triggered, at the end of the function, Country.IsUpdated
 func InitCountries() error {
 	data, err := APIs.FetchCountries("all")
 	if err != nil {
@@ -90,6 +105,6 @@ func InitCountries() error {
 		return err
 	}
 
-	Countries.IsUpdated = true
+	CountryRef.IsUpdated = true
 	return nil
 }

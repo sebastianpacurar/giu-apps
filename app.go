@@ -6,31 +6,66 @@ import (
 	"imgui-based-app/components"
 )
 
+type MenuItems struct {
+	isFirstTimeLoaded bool
+}
+
+// MainApps /TODO: Remember to switch to dynamic allocation instead of hardcoded logic
+// MenuItemsRef - To be able to verify the boolean easier during Widget rendering iterations
 var (
-	Apps = map[string]bool{"Geography": false, "Quiz Game": false}
+	MainApps     = map[string]bool{"Geography": false, "Quiz Game": false, "OS Info": false}
+	MenuItemsRef = &MenuItems{}
+	QuizWindow   *giu.WindowWidget
+	GeoWindow    *giu.WindowWidget
 )
 
 func loop() {
 
-	/// this MUST BE RAN ONLY ONCE, at startup! so it can limit the number of requests
+	/// This MUST BE RAN ONLY ONCE, at startup! so it can limit the number of requests
 	///   will fix in the future, when a sqlite concept will be prototyped.
-	if !components.Countries.IsUpdated {
+	if !components.CountryRef.IsUpdated {
 		err := components.InitCountries()
 		if err != nil {
 			return
 		}
 	}
 
-	/// the main window of the app
-	giu.SingleWindowWithMenuBar().Layout(
+	/// The main window of the app
+	// TODO: To be Updated, to prevent crazy overhead from so many conditional sentences
+	giu.SingleWindowWithMenuBar().Flags(giu.WindowFlagsMenuBar).Layout(
 		giu.MenuBar().Layout(
 			giu.Menu("Apps").Layout(
-				giu.MenuItem("Geography").OnClick(func() {
-					Apps["Geography"] = !Apps["Geography"]
+				giu.RangeBuilder("main-apps", []interface{}{
+					"Geography", "Quiz Game", "OS Info",
+				}, func(i int, v interface{}) giu.Widget {
+					currentApp := v.(string)
+
+					// if false, then set it to true, until the application closes entirely.
+					if MenuItemsRef.isFirstTimeLoaded {
+						return giu.MenuItem(currentApp).OnClick(func() {
+							if MainApps[currentApp] {
+								switch window := currentApp; window {
+								case "Geography":
+									GeoWindow.BringToFront()
+									break
+								case "Quiz Game":
+									QuizWindow.BringToFront()
+									break
+								default:
+									break
+								}
+							} else {
+								MainApps[currentApp] = !MainApps[currentApp]
+							}
+						}).Selected(MainApps[currentApp])
+					} else {
+						MenuItemsRef.isFirstTimeLoaded = true
+						return giu.MenuItem(currentApp).OnClick(func() {
+							MainApps[currentApp] = false
+						}).Selected(MainApps[currentApp])
+					}
 				}),
-				giu.MenuItem("Quiz Game").OnClick(func() {
-					Apps["Quiz Game"] = !Apps["Quiz Game"]
-				}),
+
 				giu.Menu("Text Editor").Layout(
 					giu.Menu("New").Layout(
 						giu.MenuItem("Text Document"),
@@ -45,20 +80,22 @@ func loop() {
 		),
 	)
 
-	for k, v := range Apps {
+	/// These represent the separate App Windows
+	for k, v := range MainApps {
 		if v {
 			switch window := k; window {
 			case "Geography":
-				geoWin := giu.Window(k)
-				geoWin.IsOpen(&v).Flags(giu.WindowFlagsNone).Layout(
+				GeoWindow = giu.Window(k)
+				GeoWindow.IsOpen(&v).Flags(giu.WindowFlagsAlwaysUseWindowPadding).Layout(
 					components.CountriesTable(),
 				)
 				break
 			case "Quiz Game":
-				giu.Window(k).IsOpen(&v).Flags(giu.WindowFlagsNone).Layout(
+				QuizWindow = giu.Window(k)
+				QuizWindow.IsOpen(&v).Flags(giu.WindowFlagsAlwaysUseWindowPadding).Layout(
 					giu.Label(fmt.Sprintf("This is the %s Window", k)),
 					giu.Button("toggle-window").OnClick(func() {
-						Apps[k] = !v
+						MainApps[k] = !v
 					}),
 				)
 			}
@@ -67,6 +104,6 @@ func loop() {
 }
 
 func main() {
-	win := giu.NewMasterWindow("Giu Apps", 1000, 800, 0)
+	win := giu.NewMasterWindow("Giu Apps", 840, 480, giu.MasterWindowFlagsMaximized)
 	win.Run(loop)
 }
