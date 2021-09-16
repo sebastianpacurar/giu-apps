@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/AllenDang/giu"
-	"imgui-based-app/components"
+	"imgui-based-app/components/geography"
 )
 
 type MenuItems struct {
@@ -23,8 +23,8 @@ func loop() {
 
 	/// This MUST BE RAN ONLY ONCE, at startup! so it can limit the number of requests
 	///   will fix in the future, when a sqlite concept will be prototyped.
-	if !components.CountryRef.IsUpdated {
-		err := components.InitCountries()
+	if !geography.CountryRef.IsUpdated {
+		err := geography.InitCountries()
 		if err != nil {
 			return
 		}
@@ -32,7 +32,7 @@ func loop() {
 
 	/// The main window of the app
 	// TODO: To be Updated, to prevent crazy overhead from so many conditional sentences
-	giu.SingleWindowWithMenuBar().Flags(giu.WindowFlagsMenuBar).Layout(
+	giu.SingleWindowWithMenuBar().Layout(
 		giu.MenuBar().Layout(
 			giu.Menu("Apps").Layout(
 				giu.RangeBuilder("main-apps", []interface{}{
@@ -87,7 +87,7 @@ func loop() {
 			case "Geography":
 				GeoWindow = giu.Window(k)
 				GeoWindow.IsOpen(&v).Flags(giu.WindowFlagsAlwaysUseWindowPadding).Layout(
-					components.CountriesTable(),
+					geography.CountriesTable(),
 				)
 				break
 			case "Quiz Game":
