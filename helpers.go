@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 // ConvertMapToInterfaceArray - This function takes a map[string]bool as a parameter, and spits out an interface.
 ///It simply splits the map parameter into {key:value} objects. Based on an index which keeps incrementing,
 ///the result variable will end up with content like this:  [map[geography:false] map[quiz:false]]
@@ -14,9 +12,4 @@ func ConvertMapToInterfaceArray(mapItems map[string]bool) []interface{} {
 		index++
 	}
 	return result
-}
-
-func main() {
-	data := map[string]bool{"geography": false, "quiz": false}
-	fmt.Println(ConvertMapToInterfaceArray(data))
 }

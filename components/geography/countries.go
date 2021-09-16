@@ -1,4 +1,4 @@
-package components
+package geography
 
 import (
 	"encoding/json"
@@ -88,7 +88,8 @@ func buildCountryRow() []*giu.TableRowWidget {
 // CountriesTable - builds the table in one shot using the spread operator,
 ///and the TableRowWidgets obtained from buildCountryRow
 func CountriesTable() *giu.TableWidget {
-	return giu.Table().Freeze(0, 1).FastMode(true).Rows(buildCountryRow()...)
+	return giu.Table().
+		Flags(giu.TableFlagsSortable).Freeze(0, 1).FastMode(true).Rows(buildCountryRow()...)
 }
 
 // InitCountries - runs only once at startup, to populate the Details list of structs.
