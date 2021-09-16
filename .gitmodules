@@ -1,0 +1,3 @@
+[submodule "components/giu-geography"]
+	path = components/giu-geography
+	url = https://github.com/sebastianpacurar/giu-geography.git
