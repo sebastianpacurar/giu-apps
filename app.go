@@ -32,7 +32,7 @@ func loop() {
 
 	/// The main window of the app
 	// TODO: To be Updated, to prevent crazy overhead from so many conditional sentences
-	giu.SingleWindowWithMenuBar().Layout(
+	giu.SingleWindowWithMenuBar().Flags(giu.WindowFlagsMenuBar).Layout(
 		giu.MenuBar().Layout(
 			giu.Menu("Apps").Layout(
 				giu.RangeBuilder("main-apps", []interface{}{
