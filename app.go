@@ -10,13 +10,16 @@ type MenuItems struct {
 	isFirstTimeLoaded bool
 }
 
-// MainApps /TODO: Remember to switch to dynamic allocation instead of hardcoded logic
-// MenuItemsRef - To be able to verify the boolean easier during Widget rendering iterations
 var (
-	MainApps     = map[string]bool{"Geography": false, "Quiz Game": false, "OS Info": false}
-	MenuItemsRef = &MenuItems{}
-	QuizWindow   *giu.WindowWidget
-	GeoWindow    *giu.WindowWidget
+	MasterWidth     = 840
+	MasterHeight    = 480
+	FullHeight      float32
+	MainMenuWidth   = float32(MasterWidth / 3)
+	AppsWindowWidth = float32(MasterWidth) - MainMenuWidth
+	MainApps        = map[string]bool{"Geography": false, "Quiz Game": false, "OS Info": false}
+	QuizWindow      *giu.WindowWidget
+	GeoWindow       *giu.WindowWidget
+	titleFont         *giu.FontInfo
 )
 
 func loop() {
@@ -30,63 +33,48 @@ func loop() {
 		}
 	}
 
+	size := giu.Context.GetPlatform().DisplaySize()
+	FullHeight = size[1]
+
+	if int(size[0]) >= 840 {
+		MainMenuWidth = size[0] / 5
+		AppsWindowWidth = size[0] - MainMenuWidth
+	}
+
 	/// The main window of the app
 	// TODO: To be Updated, to prevent crazy overhead from so many conditional sentences
-	giu.SingleWindowWithMenuBar().Layout(
-		giu.MenuBar().Layout(
-			giu.Menu("Apps").Layout(
-				giu.RangeBuilder("main-apps", []interface{}{
-					"Geography", "Quiz Game", "OS Info",
-				}, func(i int, v interface{}) giu.Widget {
-					currentApp := v.(string)
+	giu.Window("Main Menu").
+		///Size = LHN Menu like size and position
+		Size(MainMenuWidth, FullHeight).
+		Pos(0, 0).
+		Flags(
+			giu.WindowFlagsNoMove |
+				giu.WindowFlagsNoResize |
+				giu.WindowFlagsNoTitleBar,
+		).
+		Layout(
+			giu.Label("test").Wrapped(true).Font(titleFont),
+		)
 
-					// if false, then set it to true, until the application closes entirely.
-					if MenuItemsRef.isFirstTimeLoaded {
-						return giu.MenuItem(currentApp).OnClick(func() {
-							if MainApps[currentApp] {
-								switch window := currentApp; window {
-								case "Geography":
-									GeoWindow.BringToFront()
-									break
-								case "Quiz Game":
-									QuizWindow.BringToFront()
-									break
-								default:
-									break
-								}
-							} else {
-								MainApps[currentApp] = !MainApps[currentApp]
-							}
-						}).Selected(MainApps[currentApp])
-					} else {
-						MenuItemsRef.isFirstTimeLoaded = true
-						return giu.MenuItem(currentApp).OnClick(func() {
-							MainApps[currentApp] = false
-						}).Selected(MainApps[currentApp])
-					}
-				}),
-
-				giu.Menu("Text Editor").Layout(
-					giu.Menu("New").Layout(
-						giu.MenuItem("Text Document"),
-						giu.MenuItem("Excel"),
-					),
-					giu.MenuItem("Open"),
-				),
-				giu.Menu("Help").Layout(
-					giu.MenuItem("About"),
-				),
-			),
-		),
-	)
+	giu.Window("Apps Layout").
+		Size(AppsWindowWidth, FullHeight).
+		Pos(MainMenuWidth, 0).
+		Flags(
+			giu.WindowFlagsNoMove |
+				giu.WindowFlagsNoResize |
+				giu.WindowFlagsNoTitleBar,
+		).
+		Layout(
+			giu.Label("test 2").Wrapped(true).Font(&giu.FontInfo{}),
+		)
 
 	/// These represent the separate App Windows
 	for k, v := range MainApps {
 		if v {
 			switch window := k; window {
 			case "Geography":
-				GeoWindow = giu.Window(k)
-				GeoWindow.IsOpen(&v).Flags(giu.WindowFlagsAlwaysUseWindowPadding).Layout(
+				GeoWindow = giu.Window(k).Size(size[0]/4, size[1]/4)
+				GeoWindow.Flags(giu.WindowFlagsMenuBar).Layout(
 					giu_geography.CountriesTable(),
 				)
 				break
@@ -101,9 +89,16 @@ func loop() {
 			}
 		}
 	}
+
 }
 
 func main() {
-	win := giu.NewMasterWindow("Giu Apps", 840, 480, giu.MasterWindowFlagsMaximized)
+	// Change the default font to sans and of 20 pixels height
+	giu.SetDefaultFont("Sans.ttf", 20)
+
+	// change titleFont to look larger
+	titleFont = giu.AddFont("Sans.ttf", 28)
+
+	win := giu.NewMasterWindow("Universal App", MasterWidth, MasterHeight, giu.MasterWindowFlagsMaximized)
 	win.Run(loop)
 }
