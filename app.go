@@ -3,12 +3,9 @@ package main
 import (
 	"fmt"
 	"github.com/AllenDang/giu"
+	"image/color"
 	"imgui-based-app/components/giu-geography"
 )
-
-type MenuItems struct {
-	isFirstTimeLoaded bool
-}
 
 var (
 	MasterWidth     = 840
@@ -19,19 +16,53 @@ var (
 	MainApps        = map[string]bool{"Geography": false, "Quiz Game": false, "OS Info": false}
 	QuizWindow      *giu.WindowWidget
 	GeoWindow       *giu.WindowWidget
-	titleFont         *giu.FontInfo
+	titleFont       *giu.FontInfo
+	selected        = false
+
+	//Applications = Apps{
+	//	 []App {
+	//		{
+	//			Name: "Geography",
+	//			Active: false,
+	//			Width: AppsWindowWidth,
+	//			Height: FullHeight,
+	//			MiniApps: {
+	//				{
+	//					Name: "Countries", Active: false
+	//				}
+	//			}
+	//		},
+	//	},
+	//}
 )
+
+// Apps / TODO: Think of a way to work with structs rather than variables
+type Apps struct {
+	AppsList []App
+}
+
+type App struct {
+	Name          string
+	Active        bool
+	Width, Height float32
+	MiniApps      []MiniApp
+}
+
+type MiniApp struct {
+	Name   string
+	Active bool
+}
 
 func loop() {
 
 	/// This MUST BE RAN ONLY ONCE, at startup! so it can limit the number of requests
 	///   will fix in the future, when a sqlite concept will be prototyped.
-	if !giu_geography.CountryRef.IsUpdated {
-		err := giu_geography.InitCountries()
-		if err != nil {
-			return
-		}
-	}
+	//if !giu_geography.CountryRef.IsUpdated {
+	//	err := giu_geography.InitCountries()
+	//	if err != nil {
+	//		return
+	//	}
+	//}
 
 	size := giu.Context.GetPlatform().DisplaySize()
 	FullHeight = size[1]
@@ -41,8 +72,8 @@ func loop() {
 		AppsWindowWidth = size[0] - MainMenuWidth
 	}
 
-	/// The main window of the app
-	// TODO: To be Updated, to prevent crazy overhead from so many conditional sentences
+	/// The app consists of 2 main windows:
+	/// "Main Menu" and "Apps Layout"
 	giu.Window("Main Menu").
 		///Size = LHN Menu like size and position
 		Size(MainMenuWidth, FullHeight).
@@ -53,7 +84,38 @@ func loop() {
 				giu.WindowFlagsNoTitleBar,
 		).
 		Layout(
-			giu.Label("test").Wrapped(true).Font(titleFont),
+			giu.Child().
+				Border(true).
+				Layout(
+					/// This is the Title of the Main Menu
+					// set Text Color to Cyan rgba(0, 255, 255, 255)
+					giu.Style().
+						SetColor(giu.StyleColorText, color.RGBA{G: 255, B: 255, A: 255}).
+						To(
+							giu.Label("Main Menu").Wrapped(true).Font(titleFont),
+						),
+					giu.Separator(),
+
+					giu.TreeNode("Apps").
+						Flags(
+							giu.TreeNodeFlagsCollapsingHeader,
+						).
+						Layout(
+							giu.TreeNode("Geography").
+								Layout(
+									giu.Row(
+										giu.Checkbox("", &selected),
+										giu.Selectable("Countries Table").
+											OnClick(func() { fmt.Println("Countries Table generated") }),
+									),
+								),
+							giu.TreeNode("Quiz Game").
+								Layout(
+									giu.Selectable("Start Game").
+										OnClick(func() { fmt.Println("Quiz Game Started") }),
+								),
+						),
+				),
 		)
 
 	giu.Window("Apps Layout").
@@ -89,7 +151,6 @@ func loop() {
 			}
 		}
 	}
-
 }
 
 func main() {
