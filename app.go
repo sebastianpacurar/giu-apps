@@ -1,11 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"github.com/AllenDang/giu"
 	"image/color"
-	"imgui-based-app/components/giu-geography"
 )
+
+type AppI interface{}
+type MiniAppI interface{}
 
 var (
 	MasterWidth     = 840
@@ -13,27 +14,42 @@ var (
 	FullHeight      float32
 	MainMenuWidth   = float32(MasterWidth / 3)
 	AppsWindowWidth = float32(MasterWidth) - MainMenuWidth
-	MainApps        = map[string]bool{"Geography": false, "Quiz Game": false, "OS Info": false}
-	QuizWindow      *giu.WindowWidget
-	GeoWindow       *giu.WindowWidget
 	titleFont       *giu.FontInfo
-	selected        = false
+)
 
-	//Applications = Apps{
-	//	 []App {
-	//		{
-	//			Name: "Geography",
-	//			Active: false,
-	//			Width: AppsWindowWidth,
-	//			Height: FullHeight,
-	//			MiniApps: {
-	//				{
-	//					Name: "Countries", Active: false
-	//				}
-	//			}
-	//		},
-	//	},
-	//}
+// AppsS - The struct for the Menu
+// AppsI - The AppsList[] as an Interface (to be used with RangeBuilder() as values param)
+var (
+	AppsI = make([]interface{}, len(AppsS.AppsList))
+	AppsS = &Apps{
+		AppsList: []App{
+			{
+				Name:   "Geography",
+				Active: false,
+				MiniApps: []MiniApp{
+					{
+						Name:   "Countries Table",
+						Active: false,
+					},
+					{
+						Name:   "Map",
+						Active: false,
+					},
+				},
+			},
+
+			{
+				Name:   "Dictionary",
+				Active: false,
+				MiniApps: []MiniApp{
+					{
+						Name:   "English Explicative Dictionary",
+						Active: false,
+					},
+				},
+			},
+		},
+	}
 )
 
 // Apps / TODO: Think of a way to work with structs rather than variables
@@ -42,10 +58,9 @@ type Apps struct {
 }
 
 type App struct {
-	Name          string
-	Active        bool
-	Width, Height float32
-	MiniApps      []MiniApp
+	Name     string
+	Active   bool
+	MiniApps []MiniApp
 }
 
 type MiniApp struct {
@@ -55,15 +70,6 @@ type MiniApp struct {
 
 func loop() {
 
-	/// This MUST BE RAN ONLY ONCE, at startup! so it can limit the number of requests
-	///   will fix in the future, when a sqlite concept will be prototyped.
-	//if !giu_geography.CountryRef.IsUpdated {
-	//	err := giu_geography.InitCountries()
-	//	if err != nil {
-	//		return
-	//	}
-	//}
-
 	size := giu.Context.GetPlatform().DisplaySize()
 	FullHeight = size[1]
 
@@ -72,10 +78,14 @@ func loop() {
 		AppsWindowWidth = size[0] - MainMenuWidth
 	}
 
-	/// The app consists of 2 main windows:
-	/// "Main Menu" and "Apps Layout"
+	//
+	for i := range AppsI {
+		AppsI[i] = AppI(AppsS.AppsList[i])
+	}
+	// The app consists of 2 main windows:
+	// "Main Menu" and "Apps Layout"
 	giu.Window("Main Menu").
-		///Size = LHN Menu like size and position
+		// Size = LHN Menu like size and position
 		Size(MainMenuWidth, FullHeight).
 		Pos(0, 0).
 		Flags(
@@ -87,33 +97,43 @@ func loop() {
 			giu.Child().
 				Border(true).
 				Layout(
-					/// This is the Title of the Main Menu
-					// set Text Color to Cyan rgba(0, 255, 255, 255)
+					// This is the Title of the Main Menu. set Text Color to Cyan rgba(0, 255, 255, 255)
+					// Also, use the titleFont of 28px sans
 					giu.Style().
 						SetColor(giu.StyleColorText, color.RGBA{G: 255, B: 255, A: 255}).
 						To(
 							giu.Label("Main Menu").Wrapped(true).Font(titleFont),
 						),
 					giu.Separator(),
-
 					giu.TreeNode("Apps").
-						Flags(
-							giu.TreeNodeFlagsCollapsingHeader,
-						).
+						Flags(giu.TreeNodeFlagsCollapsingHeader).
 						Layout(
-							giu.TreeNode("Geography").
-								Layout(
-									giu.Row(
-										giu.Checkbox("", &selected),
-										giu.Selectable("Countries Table").
-											OnClick(func() { fmt.Println("Countries Table generated") }),
-									),
-								),
-							giu.TreeNode("Quiz Game").
-								Layout(
-									giu.Selectable("Start Game").
-										OnClick(func() { fmt.Println("Quiz Game Started") }),
-								),
+							// This is where the Main Menu items is generated
+							giu.RangeBuilder("Menu", AppsI, func(i int, v interface{}) giu.Widget {
+								currApp := &AppsS.AppsList[i]
+								MiniAppsI := make([]interface{}, len(currApp.MiniApps))
+								for i := range MiniAppsI {
+									MiniAppsI[i] = MiniAppI(currApp.MiniApps[i])
+								}
+								return giu.TreeNode(currApp.Name).
+									Layout(
+										// This is where the Sub Menu for every Menu Item will be generated
+										giu.RangeBuilder("Sub Menu", MiniAppsI, func(j int, v interface{}) giu.Widget {
+											currMiniApp := &currApp.MiniApps[j]
+											return giu.Row(
+												giu.Checkbox("", &currMiniApp.Active).
+													OnChange(func() {
+														currMiniApp.Active = !currMiniApp.Active
+													}),
+												giu.Selectable(currMiniApp.Name).
+													OnClick(func() {
+														currMiniApp.Active = !currMiniApp.Active
+													}).
+													Selected(currMiniApp.Active),
+											)
+										}),
+									)
+							}),
 						),
 				),
 		)
@@ -129,33 +149,11 @@ func loop() {
 		Layout(
 			giu.Label("test 2").Wrapped(true).Font(&giu.FontInfo{}),
 		)
-
-	/// These represent the separate App Windows
-	for k, v := range MainApps {
-		if v {
-			switch window := k; window {
-			case "Geography":
-				GeoWindow = giu.Window(k).Size(size[0]/4, size[1]/4)
-				GeoWindow.Flags(giu.WindowFlagsMenuBar).Layout(
-					giu_geography.CountriesTable(),
-				)
-				break
-			case "Quiz Game":
-				QuizWindow = giu.Window(k)
-				QuizWindow.IsOpen(&v).Flags(giu.WindowFlagsAlwaysUseWindowPadding).Layout(
-					giu.Label(fmt.Sprintf("This is the %s Window", k)),
-					giu.Button("toggle-window").OnClick(func() {
-						MainApps[k] = !v
-					}),
-				)
-			}
-		}
-	}
 }
 
 func main() {
 	// Change the default font to sans and of 20 pixels height
-	giu.SetDefaultFont("Sans.ttf", 20)
+	giu.SetDefaultFont("Sans.ttf", 15)
 
 	// change titleFont to look larger
 	titleFont = giu.AddFont("Sans.ttf", 28)
