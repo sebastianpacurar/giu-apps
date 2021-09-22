@@ -9,16 +9,14 @@ type AppI interface{}
 type MiniAppI interface{}
 
 var (
-	fullHeight      float32
-	fullWidth       float32
-	sideMenuWidth   float32
-	appsWindowPosX  int
-	appsWindowWidth float32
-	isSideMenuOpen  = true
-	menuBarHeight   = float32(23)
-	titleFont       *giu.FontInfo
-	smallFont       *giu.FontInfo
-	largeFont       *giu.FontInfo
+	fullWidth, fullHeight          float32
+	sideMenuWidth, appsWindowWidth float32
+	appsWindowPosX                 int
+	isSideMenuOpen                 = true
+	menuBarHeight                  = float32(23)
+	titleFont                      *giu.FontInfo
+	smallFont                      *giu.FontInfo
+	largeFont                      *giu.FontInfo
 )
 
 // appS - The struct of the Menu
@@ -52,6 +50,26 @@ var (
 					},
 				},
 			},
+
+			{
+				name:   "Maths",
+				active: false,
+				miniApps: []MiniApp{
+					{
+						name:   "Calculator",
+						active: false,
+					},
+					{
+						name:   "Geometry",
+						active: false,
+					},
+					{
+						name:   "Trigonometry",
+						active: false,
+					},
+				},
+			},
+
 			{
 				name:   "Text Handler",
 				active: false,
@@ -72,9 +90,10 @@ var (
 			},
 		},
 	}
-
 	layoutS = &Layout{
-		windows: []string{"1 (one)", "2 (two)", "3 (three)", "4 (four)"},
+		types:      []string{"Window", "Splitter"},
+		windows:    []string{"1", "2", "3", "4"},
+		directions: []string{"Wrap", "Vertical", "Horizontal"},
 	}
 )
 
@@ -94,10 +113,12 @@ type MiniApp struct {
 }
 
 type Layout struct {
-	windows           []string
-	windowsCount      int32
-	selectedWindowsNo int
-	activeWindows     []*giu.WindowWidget
+	typesIndex, windowsIndex, directionsIndex int32
+	types, windows, directions                []string
+	currWindowsNo                             int
+	currType                                  string
+	currDirection                             string
+	activeWindows                             []*giu.WindowWidget
 }
 
 // conditionedArrowBtn - is used to swap directions of the arrow after each click
@@ -148,12 +169,13 @@ func loop() {
 			giu.WindowFlagsNoMove |
 				giu.WindowFlagsNoResize |
 				giu.WindowFlagsNoTitleBar,
-		).Layout(
-		giu.MainMenuBar().Layout(
-			// Either left or right as direction
-			conditionedArrowBtn(),
-		),
-	)
+		).
+		Layout(
+			giu.MainMenuBar().Layout(
+				// Either left or right as direction
+				conditionedArrowBtn(),
+			),
+		)
 
 	// The app consists of 2 main windows:
 	// "Main Menu" and "Apps Layout"
@@ -184,41 +206,46 @@ func loop() {
 
 						// LAYOUT Menu
 						giu.TreeNode("Layout").
-							Flags(giu.TreeNodeFlagsCollapsingHeader).
+							Flags(giu.TreeNodeFlagsCollapsingHeader|giu.TreeNodeFlagsDefaultOpen).
 							Layout(
-								giu.Table().
-									Size(sideMenuWidth-30, 50).
-									Flags(
-										giu.TableFlagsScrollX|
-											giu.TableFlagsBorders|
-											giu.TableFlagsResizable,
-									).
-									Columns(
-										giu.TableColumn("Type").Flags(giu.TableColumnFlagsWidthStretch),
-										giu.TableColumn("Windows").Flags(giu.TableColumnFlagsWidthStretch),
-										giu.TableColumn("Direction").Flags(giu.TableColumnFlagsWidthStretch),
-									).
-									Rows(
-										giu.TableRow(
-											giu.Combo("", layoutS.windows[layoutS.windowsCount], layoutS.windows, &layoutS.windowsCount).
-												Flags(giu.ComboFlagHeightSmall|giu.ComboFlagNoArrowButton).
-												Size((sideMenuWidth/3)-18).
-												OnChange(func() {
-													layoutS.selectedWindowsNo = int(layoutS.windows[layoutS.windowsCount][0])
-												}),
-											giu.Combo("", layoutS.windows[layoutS.windowsCount], layoutS.windows, &layoutS.windowsCount).
-												Flags(giu.ComboFlagHeightSmall|giu.ComboFlagNoArrowButton).
-												Size((sideMenuWidth/3)-18).
-												OnChange(func() {
-													layoutS.selectedWindowsNo = int(layoutS.windows[layoutS.windowsCount][0])
-												}),
-											giu.Combo("", layoutS.windows[layoutS.windowsCount], layoutS.windows, &layoutS.windowsCount).
-												Size((sideMenuWidth/3)-18).
-												Flags(giu.ComboFlagHeightSmall|giu.ComboFlagNoArrowButton).
-												OnChange(func() {
-													layoutS.selectedWindowsNo = int(layoutS.windows[layoutS.windowsCount][0])
-												}),
-										),
+								giu.Style().
+									SetFont(smallFont).
+									To(
+										giu.Table().
+											Size(sideMenuWidth-30, 45).
+											Flags(
+												giu.TableFlagsScrollX|
+													giu.TableFlagsBorders,
+											).
+											Columns(
+												giu.TableColumn("Type").Flags(giu.TableColumnFlagsWidthStretch),
+												giu.TableColumn("Windows").Flags(giu.TableColumnFlagsWidthStretch),
+												giu.TableColumn("Direction").Flags(giu.TableColumnFlagsWidthStretch),
+											).
+											Rows(
+												giu.TableRow(
+													giu.Combo("", layoutS.types[layoutS.typesIndex], layoutS.types, &layoutS.typesIndex).
+														Flags(giu.ComboFlagHeightSmall|giu.ComboFlagNoArrowButton).
+														Size((sideMenuWidth/3)-18).
+														OnChange(func() {
+															layoutS.currType = string(layoutS.windows[layoutS.typesIndex][0])
+														}),
+
+													giu.Combo("", layoutS.windows[layoutS.windowsIndex], layoutS.windows, &layoutS.windowsIndex).
+														Flags(giu.ComboFlagHeightSmall|giu.ComboFlagNoArrowButton).
+														Size((sideMenuWidth/3)-18).
+														OnChange(func() {
+															layoutS.currWindowsNo = int(layoutS.windows[layoutS.windowsIndex][0])
+														}),
+
+													giu.Combo("", layoutS.directions[layoutS.directionsIndex], layoutS.directions, &layoutS.directionsIndex).
+														Size((sideMenuWidth/3)-18).
+														Flags(giu.ComboFlagHeightSmall|giu.ComboFlagNoArrowButton).
+														OnChange(func() {
+															layoutS.currDirection = string(layoutS.windows[layoutS.directionsIndex][0])
+														}),
+												),
+											),
 									),
 							),
 
