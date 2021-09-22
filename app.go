@@ -186,18 +186,40 @@ func loop() {
 						giu.TreeNode("Layout").
 							Flags(giu.TreeNodeFlagsCollapsingHeader).
 							Layout(
-								giu.Row(
-									giu.Style().
-										SetColor(giu.StyleColorText, color.RGBA{R: 171, G: 232, B: 39, A: 255}).
-										To(
-											giu.Label("Windows No.").Font(largeFont),
+								giu.Table().
+									Size(sideMenuWidth-30, 50).
+									Flags(
+										giu.TableFlagsScrollX|
+											giu.TableFlagsBorders|
+											giu.TableFlagsResizable,
+									).
+									Columns(
+										giu.TableColumn("Type").Flags(giu.TableColumnFlagsWidthStretch),
+										giu.TableColumn("Windows").Flags(giu.TableColumnFlagsWidthStretch),
+										giu.TableColumn("Direction").Flags(giu.TableColumnFlagsWidthStretch),
+									).
+									Rows(
+										giu.TableRow(
+											giu.Combo("", layoutS.windows[layoutS.windowsCount], layoutS.windows, &layoutS.windowsCount).
+												Flags(giu.ComboFlagHeightSmall|giu.ComboFlagNoArrowButton).
+												Size((sideMenuWidth/3)-18).
+												OnChange(func() {
+													layoutS.selectedWindowsNo = int(layoutS.windows[layoutS.windowsCount][0])
+												}),
+											giu.Combo("", layoutS.windows[layoutS.windowsCount], layoutS.windows, &layoutS.windowsCount).
+												Flags(giu.ComboFlagHeightSmall|giu.ComboFlagNoArrowButton).
+												Size((sideMenuWidth/3)-18).
+												OnChange(func() {
+													layoutS.selectedWindowsNo = int(layoutS.windows[layoutS.windowsCount][0])
+												}),
+											giu.Combo("", layoutS.windows[layoutS.windowsCount], layoutS.windows, &layoutS.windowsCount).
+												Size((sideMenuWidth/3)-18).
+												Flags(giu.ComboFlagHeightSmall|giu.ComboFlagNoArrowButton).
+												OnChange(func() {
+													layoutS.selectedWindowsNo = int(layoutS.windows[layoutS.windowsCount][0])
+												}),
 										),
-									giu.Combo("", layoutS.windows[layoutS.windowsCount], layoutS.windows, &layoutS.windowsCount).
-										Size(sideMenuWidth/3).
-										OnChange(func() {
-											layoutS.selectedWindowsNo = int(layoutS.windows[layoutS.windowsCount][0])
-										}),
-								),
+									),
 							),
 
 						giu.Separator(),
@@ -220,7 +242,12 @@ func loop() {
 											giu.RangeBuilder("Sub Menu", miniAppsI, func(j int, v interface{}) giu.Widget {
 												currMiniApp := &currApp.miniApps[j]
 												return giu.Row(
-													giu.Checkbox("", &currMiniApp.active),
+													// checkbox which has green thick when checked
+													giu.Style().
+														SetColor(giu.StyleColorCheckMark, color.RGBA{G: 255, A: 255}).
+														To(
+															giu.Checkbox("", &currMiniApp.active),
+														),
 													giu.Selectable(currMiniApp.name).
 														OnClick(func() {
 															currMiniApp.active = !currMiniApp.active
