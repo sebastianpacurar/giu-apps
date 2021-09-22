@@ -9,94 +9,107 @@ type AppI interface{}
 type MiniAppI interface{}
 
 var (
-	FullHeight      float32
-	FullWidth       float32
-	MainMenuWidth   float32
-	AppsWindowPosX  int
-	AppsWindowWidth float32
-	isMenuToggled   = true
-	MenuBarHeight   = float32(23)
+	fullHeight      float32
+	fullWidth       float32
+	sideMenuWidth   float32
+	appsWindowPosX  int
+	appsWindowWidth float32
+	isSideMenuOpen  = true
+	menuBarHeight   = float32(23)
 	titleFont       *giu.FontInfo
+	smallFont       *giu.FontInfo
+	largeFont       *giu.FontInfo
 )
 
-// AppsS - The struct of the Menu
-// AppsI - The AppsList[] as an Interface (to be used with RangeBuilder() as values param)
+// appS - The struct of the Menu
+// appsI - The appsList[] as an Interface (to be used with RangeBuilder() as values param)
 var (
-	AppsI = make([]interface{}, len(AppsS.AppsList))
-	AppsS = &Apps{
-		AppsList: []App{
+	appsI = make([]interface{}, len(appS.appsList))
+	appS  = &Apps{
+		appsList: []App{
 			{
-				Name:   "Geography",
-				Active: false,
-				MiniApps: []MiniApp{
+				name:   "Geography",
+				active: false,
+				miniApps: []MiniApp{
 					{
-						Name:   "Countries Table",
-						Active: false,
+						name:   "All Countries",
+						active: false,
 					},
 					{
-						Name:   "Map",
-						Active: false,
+						name:   "Map",
+						active: false,
 					},
 				},
 			},
 
 			{
-				Name:   "Dictionary",
-				Active: false,
-				MiniApps: []MiniApp{
+				name:   "Dictionary",
+				active: false,
+				miniApps: []MiniApp{
 					{
-						Name:   "English",
-						Active: false,
+						name:   "English",
+						active: false,
 					},
 				},
 			},
 			{
-				Name:   "Text Handler",
-				Active: false,
-				MiniApps: []MiniApp{
+				name:   "Text Handler",
+				active: false,
+				miniApps: []MiniApp{
 					{
-						Name:   "Bash Console",
-						Active: false,
+						name:   "Bash Console",
+						active: false,
 					},
 					{
-						Name:   "JSON Formatter",
-						Active: false,
+						name:   "JSON Formatter",
+						active: false,
 					},
 					{
-						Name:   "Text Editor",
-						Active: false,
+						name:   "Text Editor",
+						active: false,
 					},
 				},
 			},
 		},
 	}
+
+	layoutS = &Layout{
+		windows: []string{"1 (one)", "2 (two)", "3 (three)", "4 (four)"},
+	}
 )
 
 type Apps struct {
-	AppsList []App
+	appsList []App
 }
 
 type App struct {
-	Name     string
-	Active   bool
-	MiniApps []MiniApp
+	name     string
+	active   bool
+	miniApps []MiniApp
 }
 
 type MiniApp struct {
-	Name   string
-	Active bool
+	name   string
+	active bool
 }
 
-// ConditionedArrowBtn - is used to swap directions of the arrow after each click
-func ConditionedArrowBtn() giu.Widget {
+type Layout struct {
+	windows           []string
+	windowsCount      int32
+	selectedWindowsNo int
+	activeWindows     []*giu.WindowWidget
+}
+
+// conditionedArrowBtn - is used to swap directions of the arrow after each click
+func conditionedArrowBtn() giu.Widget {
 	var arrowBtn *giu.ArrowButtonWidget
-	if isMenuToggled {
+	if isSideMenuOpen {
 		arrowBtn = giu.ArrowButton("close menu", giu.DirectionLeft).OnClick(func() {
-			isMenuToggled = false
+			isSideMenuOpen = false
 		})
 	} else {
 		arrowBtn = giu.ArrowButton("open menu", giu.DirectionRight).OnClick(func() {
-			isMenuToggled = true
+			isSideMenuOpen = true
 		})
 	}
 	return arrowBtn
@@ -105,28 +118,28 @@ func ConditionedArrowBtn() giu.Widget {
 func loop() {
 
 	size := giu.Context.GetPlatform().DisplaySize()
-	FullWidth = size[0]
-	FullHeight = size[1]
+	fullWidth = size[0]
+	fullHeight = size[1]
 
 	// For sizes bigger than 990px use responsive width
 	// If the Main Menu is closed, then stretch Apps Window to full width
 	if int(size[0]) >= 990 {
-		MainMenuWidth = size[0] / 4
-		AppsWindowPosX = int(MainMenuWidth)
+		sideMenuWidth = size[0] / 4
+		appsWindowPosX = int(sideMenuWidth)
 	} else {
-		MainMenuWidth = 250
-		AppsWindowPosX = 250
+		sideMenuWidth = 250
+		appsWindowPosX = 250
 	}
-	if !isMenuToggled {
-		AppsWindowWidth = FullWidth
-		AppsWindowPosX = 0
-		MainMenuWidth = 0
+	if !isSideMenuOpen {
+		appsWindowWidth = fullWidth
+		appsWindowPosX = 0
+		sideMenuWidth = 0
 	}
-	AppsWindowWidth = FullWidth - MainMenuWidth
+	appsWindowWidth = fullWidth - sideMenuWidth
 
 	// Create a list of interfaces converted from struct
-	for i := range AppsI {
-		AppsI[i] = AppI(AppsS.AppsList[i])
+	for i := range appsI {
+		appsI[i] = AppI(appS.appsList[i])
 	}
 
 	giu.Window("Menu Bar").
@@ -137,17 +150,18 @@ func loop() {
 				giu.WindowFlagsNoTitleBar,
 		).Layout(
 		giu.MainMenuBar().Layout(
-			ConditionedArrowBtn(),
+			// Either left or right as direction
+			conditionedArrowBtn(),
 		),
 	)
 
 	// The app consists of 2 main windows:
 	// "Main Menu" and "Apps Layout"
-	if isMenuToggled {
+	if isSideMenuOpen {
 		giu.Window("Main Menu").
 			// Size = LHN Menu-like size and position
-			Size(MainMenuWidth, FullHeight-MenuBarHeight).
-			Pos(0, MenuBarHeight).
+			Size(sideMenuWidth, fullHeight-menuBarHeight).
+			Pos(0, menuBarHeight).
 			Flags(
 				giu.WindowFlagsNoMove |
 					giu.WindowFlagsNoResize |
@@ -167,35 +181,51 @@ func loop() {
 								),
 						),
 						giu.Separator(),
+
 						// LAYOUT Menu
 						giu.TreeNode("Layout").
 							Flags(giu.TreeNodeFlagsCollapsingHeader).
-							Layout(giu.Label("test")),
+							Layout(
+								giu.Row(
+									giu.Style().
+										SetColor(giu.StyleColorText, color.RGBA{R: 171, G: 232, B: 39, A: 255}).
+										To(
+											giu.Label("Windows No.").Font(largeFont),
+										),
+									giu.Combo("", layoutS.windows[layoutS.windowsCount], layoutS.windows, &layoutS.windowsCount).
+										Size(sideMenuWidth/3).
+										OnChange(func() {
+											layoutS.selectedWindowsNo = int(layoutS.windows[layoutS.windowsCount][0])
+										}),
+								),
+							),
+
+						giu.Separator(),
 
 						// APPS Menu
 						giu.TreeNode("Apps").
 							Flags(giu.TreeNodeFlagsCollapsingHeader).
 							Layout(
 								// This is where the Main Menu items is generated
-								giu.RangeBuilder("Menu", AppsI, func(i int, v interface{}) giu.Widget {
-									currApp := &AppsS.AppsList[i]
-									MiniAppsI := make([]interface{}, len(currApp.MiniApps))
-									for i := range MiniAppsI {
-										MiniAppsI[i] = MiniAppI(currApp.MiniApps[i])
+								giu.RangeBuilder("Menu", appsI, func(i int, v interface{}) giu.Widget {
+									currApp := &appS.appsList[i]
+									miniAppsI := make([]interface{}, len(currApp.miniApps))
+									for i := range miniAppsI {
+										miniAppsI[i] = MiniAppI(currApp.miniApps[i])
 									}
-									return giu.TreeNode(currApp.Name).
+									return giu.TreeNode(currApp.name).
 										Flags(giu.TreeNodeFlagsSpanFullWidth).
 										Layout(
 											// This is where the Sub Menu for every Menu Item will be generated
-											giu.RangeBuilder("Sub Menu", MiniAppsI, func(j int, v interface{}) giu.Widget {
-												currMiniApp := &currApp.MiniApps[j]
+											giu.RangeBuilder("Sub Menu", miniAppsI, func(j int, v interface{}) giu.Widget {
+												currMiniApp := &currApp.miniApps[j]
 												return giu.Row(
-													giu.Checkbox("", &currMiniApp.Active),
-													giu.Selectable(currMiniApp.Name).
+													giu.Checkbox("", &currMiniApp.active),
+													giu.Selectable(currMiniApp.name).
 														OnClick(func() {
-															currMiniApp.Active = !currMiniApp.Active
+															currMiniApp.active = !currMiniApp.active
 														}).
-														Selected(currMiniApp.Active),
+														Selected(currMiniApp.active),
 												)
 											}),
 										)
@@ -204,9 +234,10 @@ func loop() {
 					),
 			)
 	}
+
 	giu.Window("Apps").
-		Size(AppsWindowWidth, FullHeight-MenuBarHeight).
-		Pos(float32(AppsWindowPosX), MenuBarHeight).
+		Size(appsWindowWidth, fullHeight-menuBarHeight).
+		Pos(float32(appsWindowPosX), menuBarHeight).
 		Flags(
 			giu.WindowFlagsNoMove |
 				giu.WindowFlagsNoResize |
@@ -221,8 +252,9 @@ func main() {
 	// Change the default font to sans and of 18 pixels height
 	giu.SetDefaultFont("Sans.ttf", 18)
 
-	// Change titleFont to look larger
 	titleFont = giu.AddFont("Sans.ttf", 28)
+	smallFont = giu.AddFont("Sans.ttf", 15)
+	largeFont = giu.AddFont("Sans.ttf", 22)
 
 	win := giu.NewMasterWindow("Universal App", 960, 640, giu.MasterWindowFlagsMaximized)
 	win.Run(loop)
