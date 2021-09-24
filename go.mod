@@ -12,5 +12,5 @@ require (
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20210727001814-0db043d8d5be // indirect
 	github.com/go-resty/resty/v2 v2.6.0 // indirect
 	github.com/sahilm/fuzzy v0.1.0 // indirect
-	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4 // indirect
+	golang.org/x/net v0.0.0-20210917221730-978cfadd31cf // indirect
 )
