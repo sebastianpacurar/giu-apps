@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/AllenDang/giu"
 	"image/color"
 	"strconv"
@@ -17,12 +18,6 @@ var (
 	isSideMenuOpen        = true
 	titleFont, smallFont  *giu.FontInfo
 	defaultFlags          = giu.WindowFlagsNoMove | giu.WindowFlagsNoResize | giu.WindowFlagsNoTitleBar
-
-	// currWinGeom - this is the window under iteration, which will eventually
-	currWinGeom = []float32{
-		fullWidth - sideMenuWidth, fullHeight - menuBarHeight,
-		sideMenuWidth, menuBarHeight,
-	}
 )
 
 // appsS - The struct of the Menu
@@ -98,12 +93,6 @@ var (
 	}
 
 	layoutS = &Layout{
-		geometry: []float32{
-			fullWidth - sideMenuWidth,
-			fullHeight - menuBarHeight,
-			sideMenuWidth,
-			menuBarHeight,
-		},
 		comboTypesOptions:     []string{"Window", "Splitter"},
 		comboWindowsOptions:   []string{"1", "2"},
 		comboDirectionOptions: []string{"Vertical", "Horizontal", "Grid"},
@@ -113,8 +102,9 @@ var (
 		prevCombination:       []string{"Window", "1", "Vertical"},
 		currCombination:       []string{"Window", "1", "Vertical"},
 		isDashboardView:       true,
-		runningWindows: []Window{
+		runningWindows: []*Window{
 			{
+				// first element is the initial setup
 				title: "Dashboard",
 				geometry: []float32{
 					fullWidth - sideMenuWidth,
@@ -160,7 +150,7 @@ type Layout struct {
 	currDirection                             string
 	currCombination                           []string
 	prevCombination                           []string
-	runningWindows                            []Window
+	runningWindows                            []*Window
 	isDashboardView                           bool
 }
 
@@ -180,7 +170,6 @@ func conditionedArrowBtn() giu.Widget {
 }
 
 func loop() {
-
 	size := giu.Context.GetPlatform().DisplaySize()
 	fullWidth = size[0]
 	fullHeight = size[1]
@@ -194,7 +183,13 @@ func loop() {
 
 	if !isSideMenuOpen {
 		sideMenuWidth = 0
-		layoutS.geometry[2] = 0
+	}
+
+	layoutS.geometry = []float32{
+		fullWidth - sideMenuWidth,
+		fullHeight - menuBarHeight,
+		sideMenuWidth,
+		menuBarHeight,
 	}
 
 	// Create a list of interfaces converted from struct
@@ -354,7 +349,16 @@ func loop() {
 				giu.Label("Dashboard"),
 			)
 	} else {
-
+		for i := range layoutS.runningWindows {
+			currWin := layoutS.runningWindows[i]
+			giu.Window(currWin.title).
+				Size(currWin.geometry[0], currWin.geometry[1]).
+				Pos(currWin.geometry[2], currWin.geometry[3]).
+				Flags(defaultFlags).
+				Layout(
+					giu.Label(currWin.title),
+				)
+		}
 	}
 }
 
@@ -386,40 +390,57 @@ func buildAppsLayout() {
 		layoutS.isDashboardView = false
 	}
 
-	layoutS.runningWindows = make([]Window, layoutS.currWindowsNo)
-
-	if !isSideMenuOpen {
-		currWinGeom[0] = fullWidth
-		currWinGeom[2] = 0
+	layoutS.runningWindows = make([]*Window, layoutS.currWindowsNo)
+	for i := range layoutS.runningWindows {
+		layoutS.runningWindows[i] = &Window{}
 	}
 
 	switch layoutType := layoutS.currType; layoutType {
 	case "Window":
-
-		switch layoutDirection := layoutS.currDirection; layoutDirection {
-		case "Vertical":
-
-			switch count := layoutS.currWindowsNo; count {
-			case 1:
-				for i := 0; i < len(layoutS.runningWindows); i++ {
-					layoutS.runningWindows[i].geometry = []float32{
-						currWinGeom[0], currWinGeom[1], currWinGeom[2], currWinGeom[3],
-					}
-					layoutS.runningWindows[i].layoutSlot = 1
-					layoutS.runningWindows[i].title = "Dashboard"
+		switch count := layoutS.currWindowsNo; count {
+		case 1:
+			for i := 0; i < count; i++ {
+				layoutS.runningWindows[i].geometry = []float32{
+					layoutS.geometry[0],
+					layoutS.geometry[1],
+					layoutS.geometry[2],
+					layoutS.geometry[3],
 				}
+				layoutS.runningWindows[i].layoutSlot = 1
+				layoutS.runningWindows[i].title = "Dashboard"
+			}
 
-			case 2:
-				//for i := 1; i <= layoutS.currWindowsNo; i++ {
-				//	layoutS.runningWindows[]windowsList[i].geometry = []float32{currWinGeom[0] / 2, currWinGeom[1], currWinGeom[2], currWinGeom[3]}
-				//
-				//}
-				//windowsGeom["w1"] = []float32{currWinGeom[0] / 2, currWinGeom[1], currWinGeom[2], currWinGeom[3]}
-				//windowsGeom["w2"] = []float32{currWinGeom[0] / 2, currWinGeom[1], sideMenuWidth, currWinGeom[3]}
+		case 2:
+			for i := range layoutS.runningWindows {
+				layoutS.runningWindows[i] = &Window{}
+			}
+			switch layoutDirection := layoutS.currDirection; layoutDirection {
+
+			case "Vertical":
+				for i := range layoutS.runningWindows {
+					if i%2 == 0 {
+						layoutS.runningWindows[i].title = fmt.Sprintf("Window %d", i+1)
+						layoutS.runningWindows[i].geometry = []float32{
+							layoutS.geometry[0] / 2,
+							layoutS.geometry[1],
+							sideMenuWidth,
+							menuBarHeight,
+						}
+						layoutS.runningWindows[i].layoutSlot = i + 1
+					} else {
+						layoutS.runningWindows[i].title = fmt.Sprintf("Window %d", i+1)
+						layoutS.runningWindows[i].geometry = []float32{
+							layoutS.runningWindows[0].geometry[0],
+							layoutS.runningWindows[0].geometry[1],
+							layoutS.geometry[0] - layoutS.runningWindows[0].geometry[0],
+							menuBarHeight,
+						}
+						layoutS.runningWindows[i].layoutSlot = i + 1
+					}
+				}
 			}
 		}
 	}
-
 }
 
 func main() {
