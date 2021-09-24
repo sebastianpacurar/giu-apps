@@ -14,8 +14,6 @@ var (
 	fullWidth, fullHeight float32
 	sideMenuWidth         float32
 	menuBarHeight         = float32(23)
-	appsLayoutSize        []float32
-	appsLayoutPos         []float32
 	isSideMenuOpen        = true
 	titleFont, smallFont  *giu.FontInfo
 	defaultFlags          = giu.WindowFlagsNoMove | giu.WindowFlagsNoResize | giu.WindowFlagsNoTitleBar
@@ -100,6 +98,12 @@ var (
 	}
 
 	layoutS = &Layout{
+		geometry: []float32{
+			fullWidth - sideMenuWidth,
+			fullHeight - menuBarHeight,
+			sideMenuWidth,
+			menuBarHeight,
+		},
 		comboTypesOptions:     []string{"Window", "Splitter"},
 		comboWindowsOptions:   []string{"1", "2"},
 		comboDirectionOptions: []string{"Vertical", "Horizontal", "Grid"},
@@ -111,8 +115,13 @@ var (
 		isDashboardView:       true,
 		runningWindows: []Window{
 			{
-				title:      "Dashboard",
-				geometry:   []float32{fullWidth - sideMenuWidth, fullHeight - menuBarHeight, sideMenuWidth, menuBarHeight},
+				title: "Dashboard",
+				geometry: []float32{
+					fullWidth - sideMenuWidth,
+					fullHeight - menuBarHeight,
+					sideMenuWidth,
+					menuBarHeight,
+				},
 				layoutSlot: 1,
 			},
 		},
@@ -141,6 +150,7 @@ type Window struct {
 }
 
 type Layout struct {
+	geometry                                  []float32
 	typesIndex, windowsIndex, directionsIndex int32
 	comboTypesOptions                         []string
 	comboWindowsOptions                       []string
@@ -174,23 +184,19 @@ func loop() {
 	size := giu.Context.GetPlatform().DisplaySize()
 	fullWidth = size[0]
 	fullHeight = size[1]
+	sideMenuWidth = fullWidth / 4
 
 	// For sizes bigger than 990px use responsive width
 	// If the Main Menu is closed, then stretch Apps Window to full width
-	if int(size[0]) >= 990 {
-		sideMenuWidth = size[0] / 4
-		appsLayoutPos[0] = sideMenuWidth
-	} else {
+	if int(fullWidth) <= 990 {
 		sideMenuWidth = 250
-		appsLayoutSize[0] = 250
 	}
+
 	if !isSideMenuOpen {
-		appsLayoutSize[0] = fullWidth - sideMenuWidth
-		appsLayoutSize[0] = 0
 		sideMenuWidth = 0
+		layoutS.geometry[2] = 0
 	}
-	appsLayoutSize[0] = fullWidth - sideMenuWidth
-	appsLayoutSize[1] = fullHeight - menuBarHeight
+
 	// Create a list of interfaces converted from struct
 	for i := range appsI {
 		appsI[i] = AppI(appsS.appsList[i])
@@ -215,7 +221,7 @@ func loop() {
 	if isSideMenuOpen {
 		giu.Window("Main Menu").
 			// Size = LHN Menu-like size and position
-			Size(sideMenuWidth, appsLayoutSize[1]).
+			Size(sideMenuWidth, layoutS.geometry[1]).
 			Pos(0, menuBarHeight).
 			Flags(defaultFlags).
 			Layout(
@@ -341,8 +347,8 @@ func loop() {
 	// Toggle Dashboard on start and when there are no apps selected
 	if layoutS.isDashboardView {
 		giu.Window("Dashboard").
-			Size(appsLayoutSize[0], appsLayoutSize[1]).
-			Pos(appsLayoutPos[0], menuBarHeight).
+			Size(layoutS.geometry[0], layoutS.geometry[1]).
+			Pos(layoutS.geometry[2], menuBarHeight).
 			Flags(defaultFlags).
 			Layout(
 				giu.Label("Dashboard"),
@@ -354,8 +360,8 @@ func loop() {
 
 func isBuildLayoutBtnDisabled() bool {
 	res := true
-	for k, _ := range layoutS.currCombination {
-		if layoutS.currCombination[k] == layoutS.prevCombination[k] {
+	for i := range layoutS.currCombination {
+		if layoutS.currCombination[i] == layoutS.prevCombination[i] {
 			res = false
 			break
 		}
@@ -370,7 +376,11 @@ func buildAppsLayout() {
 		}
 	}
 
-	layoutS.currCombination = []string{layoutS.currType, strconv.Itoa(layoutS.currWindowsNo), layoutS.currDirection}
+	layoutS.currCombination = []string{
+		layoutS.currType,
+		strconv.Itoa(layoutS.currWindowsNo),
+		layoutS.currDirection,
+	}
 
 	if layoutS.currWindowsNo > 0 {
 		layoutS.isDashboardView = false
@@ -378,23 +388,26 @@ func buildAppsLayout() {
 
 	layoutS.runningWindows = make([]Window, layoutS.currWindowsNo)
 
+	if !isSideMenuOpen {
+		currWinGeom[0] = fullWidth
+		currWinGeom[2] = 0
+	}
+
 	switch layoutType := layoutS.currType; layoutType {
 	case "Window":
 
 		switch layoutDirection := layoutS.currDirection; layoutDirection {
 		case "Vertical":
-			if !isSideMenuOpen {
-				currWinGeom[0] = fullWidth
-				currWinGeom[2] = 0
-			}
 
 			switch count := layoutS.currWindowsNo; count {
 			case 1:
-				layoutS.runningWindows[0].geometry = []float32{
-					currWinGeom[0], currWinGeom[1], currWinGeom[2], currWinGeom[3],
+				for i := 0; i < len(layoutS.runningWindows); i++ {
+					layoutS.runningWindows[i].geometry = []float32{
+						currWinGeom[0], currWinGeom[1], currWinGeom[2], currWinGeom[3],
+					}
+					layoutS.runningWindows[i].layoutSlot = 1
+					layoutS.runningWindows[i].title = "Dashboard"
 				}
-				layoutS.runningWindows[0].layoutSlot = 1
-				layoutS.runningWindows[0].title = "Dashboard"
 
 			case 2:
 				//for i := 1; i <= layoutS.currWindowsNo; i++ {
