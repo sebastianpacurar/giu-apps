@@ -13,9 +13,6 @@ type MiniAppI interface{}
 // Data related to the App Layout handling
 var (
 	fullWidth, fullHeight float32
-	sideMenuWidth         float32
-	menuBarHeight         = float32(23)
-	isSideMenuOpen        = true
 	titleFont, smallFont  *giu.FontInfo
 	defaultFlags          = giu.WindowFlagsNoMove | giu.WindowFlagsNoResize | giu.WindowFlagsNoTitleBar
 )
@@ -93,6 +90,7 @@ var (
 	}
 
 	layoutS = &Layout{
+		geometry:              make([]float32, 4),
 		comboTypesOptions:     []string{"Window", "Splitter"},
 		comboWindowsOptions:   []string{"1", "2"},
 		comboDirectionOptions: []string{"Vertical", "Horizontal", "Grid"},
@@ -102,21 +100,42 @@ var (
 		prevCombination:       []string{"Window", "1", "Vertical"},
 		currCombination:       []string{"Window", "1", "Vertical"},
 		isDashboardView:       true,
-		runningWindows: []*Window{
-			{
-				// first element is the initial setup
-				title: "Dashboard",
-				geometry: []float32{
-					fullWidth - sideMenuWidth,
-					fullHeight - menuBarHeight,
-					sideMenuWidth,
-					menuBarHeight,
-				},
-				layoutSlot: 1,
-			},
+
+		// TODO: currently on hold
+		//runningWindows: []*Window{
+		//	{
+		//		// first element is the initial setup
+		//		title:      "Dashboard",
+		//		geometry:   make([]float32, 4),
+		//		layoutSlot: 1,
+		//	},
+		//},
+	}
+
+	sideMenuS = &SideMenu{
+		geometry: make([]float32, 4),
+		toggled:  true,
+	}
+
+	// TODO: Leave menuBarS hardcoded for now
+	menuBarS = &MenuBar{
+		geometry: []float32{
+			fullWidth,
+			23,
+			0,
+			0,
 		},
 	}
 )
+
+type SideMenu struct {
+	geometry []float32
+	toggled  bool
+}
+
+type MenuBar struct {
+	geometry []float32
+}
 
 type Apps struct {
 	appsList []App
@@ -157,13 +176,13 @@ type Layout struct {
 // conditionedArrowBtn - is used to swap directions of the arrow after each click
 func conditionedArrowBtn() giu.Widget {
 	var arrowBtn *giu.ArrowButtonWidget
-	if isSideMenuOpen {
+	if sideMenuS.toggled {
 		arrowBtn = giu.ArrowButton("close menu", giu.DirectionLeft).OnClick(func() {
-			isSideMenuOpen = false
+			sideMenuS.toggled = false
 		})
 	} else {
 		arrowBtn = giu.ArrowButton("open menu", giu.DirectionRight).OnClick(func() {
-			isSideMenuOpen = true
+			sideMenuS.toggled = true
 		})
 	}
 	return arrowBtn
@@ -173,29 +192,61 @@ func loop() {
 	size := giu.Context.GetPlatform().DisplaySize()
 	fullWidth = size[0]
 	fullHeight = size[1]
-	sideMenuWidth = fullWidth / 4
+	sideMenuS.geometry[0] = fullWidth / 4
+	sideMenuS.geometry[1] = fullHeight
 
 	// For sizes bigger than 990px use responsive width
 	// If the Main Menu is closed, then stretch Apps Window to full width
 	if int(fullWidth) <= 990 {
-		sideMenuWidth = 250
+		sideMenuS.geometry[0] = 250
 	}
 
-	if !isSideMenuOpen {
-		sideMenuWidth = 0
+	if !sideMenuS.toggled {
+		sideMenuS.geometry[0] = 0
 	}
 
 	layoutS.geometry = []float32{
-		fullWidth - sideMenuWidth,
-		fullHeight - menuBarHeight,
-		sideMenuWidth,
-		menuBarHeight,
+		fullWidth - sideMenuS.geometry[0],
+		fullHeight - menuBarS.geometry[1],
+		sideMenuS.geometry[0],
+		menuBarS.geometry[1],
 	}
 
 	// Create a list of interfaces converted from struct
 	for i := range appsI {
 		appsI[i] = AppI(appsS.appsList[i])
 	}
+
+	// TODO: Currently on hold
+	// Toggle Dashboard on start and when there are no apps selected
+	//if layoutS.isDashboardView {
+	//	giu.Window("Dashboard").
+	//		Size(layoutS.geometry[0], layoutS.geometry[1]).
+	//		Pos(layoutS.geometry[2], menuBarS.geometry[1]).
+	//		Flags(defaultFlags).
+	//		Layout(
+	//			giu.Label("Dashboard"),
+	//		)
+	//} else {
+	//	for i := range layoutS.runningWindows {
+	//		currWin := layoutS.runningWindows[i]
+	//		giu.Window(currWin.title).
+	//			Size(currWin.geometry[0], currWin.geometry[1]).
+	//			Pos(currWin.geometry[2], currWin.geometry[3]).
+	//			Flags(defaultFlags).
+	//			Layout(
+	//				giu.Label(currWin.title),
+	//			)
+	//	}
+	//}
+
+	giu.Window("Dashboard").
+		Size(layoutS.geometry[0], layoutS.geometry[1]).
+		Pos(layoutS.geometry[2], menuBarS.geometry[1]).
+		Flags(defaultFlags).
+		Layout(
+			giu.Label("Dashboard"),
+		)
 
 	giu.Window("Menu Bar").
 		Pos(0, 0).
@@ -213,11 +264,11 @@ func loop() {
 
 	// The app consists of 2 main windows:
 	// "Main Menu" and "Apps Layout"
-	if isSideMenuOpen {
+	if sideMenuS.toggled {
 		giu.Window("Main Menu").
 			// Size = LHN Menu-like size and position
-			Size(sideMenuWidth, layoutS.geometry[1]).
-			Pos(0, menuBarHeight).
+			Size(sideMenuS.geometry[0], layoutS.geometry[1]).
+			Pos(0, menuBarS.geometry[1]).
 			Flags(defaultFlags).
 			Layout(
 				giu.Child().
@@ -265,20 +316,20 @@ func loop() {
 													giu.TableRow(
 														giu.Combo("", layoutS.comboTypesOptions[layoutS.typesIndex], layoutS.comboTypesOptions, &layoutS.typesIndex).
 															Flags(giu.ComboFlagHeightSmall|giu.ComboFlagNoArrowButton).
-															Size((sideMenuWidth/3)-18).
+															Size((sideMenuS.geometry[0]/3)-18).
 															OnChange(func() {
 																layoutS.currType = layoutS.comboTypesOptions[layoutS.typesIndex]
 															}),
 
 														giu.Combo("", layoutS.comboWindowsOptions[layoutS.windowsIndex], layoutS.comboWindowsOptions, &layoutS.windowsIndex).
 															Flags(giu.ComboFlagHeightSmall|giu.ComboFlagNoArrowButton).
-															Size((sideMenuWidth/3)-18).
+															Size((sideMenuS.geometry[0]/3)-18).
 															OnChange(func() {
 																layoutS.currWindowsNo = int(layoutS.windowsIndex) + 1
 															}),
 
 														giu.Combo("", layoutS.comboDirectionOptions[layoutS.directionsIndex], layoutS.comboDirectionOptions, &layoutS.directionsIndex).
-															Size((sideMenuWidth/3)-18).
+															Size((sideMenuS.geometry[0]/3)-18).
 															Flags(giu.ComboFlagHeightSmall|giu.ComboFlagNoArrowButton).
 															OnChange(func() {
 																layoutS.currDirection = layoutS.comboDirectionOptions[layoutS.directionsIndex]
@@ -288,10 +339,11 @@ func loop() {
 										),
 									// The Button below triggers buildAppsLayout function,
 									// And will appear as Disabled if the combination maps are the same
-									giu.Button("Build Layout").
+									giu.Button("waiting fix").
 										Size(giu.Auto, 25).
-										OnClick(buildAppsLayout).
-										Disabled(isBuildLayoutBtnDisabled()),
+										// TODO: currently on hold
+										//OnClick(buildAppsLayout).
+										Disabled(true),
 								),
 							),
 
@@ -338,28 +390,6 @@ func loop() {
 					),
 			)
 	}
-
-	// Toggle Dashboard on start and when there are no apps selected
-	if layoutS.isDashboardView {
-		giu.Window("Dashboard").
-			Size(layoutS.geometry[0], layoutS.geometry[1]).
-			Pos(layoutS.geometry[2], menuBarHeight).
-			Flags(defaultFlags).
-			Layout(
-				giu.Label("Dashboard"),
-			)
-	} else {
-		for i := range layoutS.runningWindows {
-			currWin := layoutS.runningWindows[i]
-			giu.Window(currWin.title).
-				Size(currWin.geometry[0], currWin.geometry[1]).
-				Pos(currWin.geometry[2], currWin.geometry[3]).
-				Flags(defaultFlags).
-				Layout(
-					giu.Label(currWin.title),
-				)
-		}
-	}
 }
 
 func isBuildLayoutBtnDisabled() bool {
@@ -373,6 +403,7 @@ func isBuildLayoutBtnDisabled() bool {
 	return res
 }
 
+// TODO: currently on hold
 func buildAppsLayout() {
 	if layoutS.currCombination != nil {
 		for i := 0; i < 3; i++ {
@@ -423,8 +454,8 @@ func buildAppsLayout() {
 						layoutS.runningWindows[i].geometry = []float32{
 							layoutS.geometry[0] / 2,
 							layoutS.geometry[1],
-							sideMenuWidth,
-							menuBarHeight,
+							sideMenuS.geometry[0],
+							menuBarS.geometry[1],
 						}
 						layoutS.runningWindows[i].layoutSlot = i + 1
 					} else {
@@ -433,7 +464,7 @@ func buildAppsLayout() {
 							layoutS.runningWindows[0].geometry[0],
 							layoutS.runningWindows[0].geometry[1],
 							layoutS.geometry[0] - layoutS.runningWindows[0].geometry[0],
-							menuBarHeight,
+							menuBarS.geometry[1],
 						}
 						layoutS.runningWindows[i].layoutSlot = i + 1
 					}
