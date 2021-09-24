@@ -117,14 +117,17 @@ var (
 		toggled:  true,
 	}
 
-	// TODO: Leave menuBarS hardcoded for now
-	menuBarS = &MenuBar{
-		geometry: []float32{
-			fullWidth,
-			23,
-			0,
-			0,
-		},
+	// TODO: Leave TopBarS hardcoded for now
+	TopBarS = &TopBar{
+		geometry: make([]float32, 4),
+	}
+
+	sideBarS = &SideBar{
+		geometry: make([]float32, 4),
+	}
+
+	bottomBarS = &BottomBar{
+		geometry: make([]float32, 4),
 	}
 )
 
@@ -133,7 +136,15 @@ type SideMenu struct {
 	toggled  bool
 }
 
-type MenuBar struct {
+type TopBar struct {
+	geometry []float32
+}
+
+type SideBar struct {
+	geometry []float32
+}
+
+type BottomBar struct {
 	geometry []float32
 }
 
@@ -192,13 +203,39 @@ func loop() {
 	size := giu.Context.GetPlatform().DisplaySize()
 	fullWidth = size[0]
 	fullHeight = size[1]
-	sideMenuS.geometry[0] = fullWidth / 4
-	sideMenuS.geometry[1] = fullHeight
+
+	// geometry = [width, height, positionX, positionY]
+	TopBarS.geometry = []float32{
+		fullWidth,
+		23,
+		0,
+		0,
+	}
+	bottomBarS.geometry = []float32{
+		fullWidth,
+		40,
+		0,
+		fullHeight - 40,
+	}
+	sideBarS.geometry = []float32{
+		40,
+		fullHeight - (TopBarS.geometry[1] + bottomBarS.geometry[1]),
+		fullWidth - 40,
+		23,
+	}
+	sideMenuS.geometry = []float32{
+		fullWidth / 4,
+		fullHeight - (TopBarS.geometry[1] + bottomBarS.geometry[1]),
+		0,
+		23,
+	}
 
 	// For sizes bigger than 990px use responsive width
 	// If the Main Menu is closed, then stretch Apps Window to full width
 	if int(fullWidth) <= 990 {
 		sideMenuS.geometry[0] = 250
+	} else if int(fullWidth) >= 1200 {
+		sideMenuS.geometry[0] = 300
 	}
 
 	if !sideMenuS.toggled {
@@ -206,15 +243,10 @@ func loop() {
 	}
 
 	layoutS.geometry = []float32{
-		fullWidth - sideMenuS.geometry[0],
-		fullHeight - menuBarS.geometry[1],
+		fullWidth - (sideMenuS.geometry[0] + sideBarS.geometry[0]),
+		fullHeight - (TopBarS.geometry[1] + bottomBarS.geometry[1]),
 		sideMenuS.geometry[0],
-		menuBarS.geometry[1],
-	}
-
-	// Create a list of interfaces converted from struct
-	for i := range appsI {
-		appsI[i] = AppI(appsS.appsList[i])
+		TopBarS.geometry[1],
 	}
 
 	// TODO: Currently on hold
@@ -222,7 +254,7 @@ func loop() {
 	//if layoutS.isDashboardView {
 	//	giu.Window("Dashboard").
 	//		Size(layoutS.geometry[0], layoutS.geometry[1]).
-	//		Pos(layoutS.geometry[2], menuBarS.geometry[1]).
+	//		Pos(layoutS.geometry[2], TopBarS.geometry[1]).
 	//		Flags(defaultFlags).
 	//		Layout(
 	//			giu.Label("Dashboard"),
@@ -242,10 +274,35 @@ func loop() {
 
 	giu.Window("Dashboard").
 		Size(layoutS.geometry[0], layoutS.geometry[1]).
-		Pos(layoutS.geometry[2], menuBarS.geometry[1]).
+		Pos(layoutS.geometry[2], TopBarS.geometry[1]).
 		Flags(defaultFlags).
 		Layout(
 			giu.Label("Dashboard"),
+		)
+
+	giu.Window("Bottom Bar").
+		Size(bottomBarS.geometry[0], bottomBarS.geometry[1]).
+		Pos(bottomBarS.geometry[2], bottomBarS.geometry[3]).
+		Flags(defaultFlags).
+		Layout(
+			giu.Row(
+				giu.Button("test").Size(100, 20),
+				giu.Button("test").Size(100, 20),
+				giu.Dummy(bottomBarS.geometry[0]-270, 0),
+				giu.ImageWithFile("icons/home_white_icon_48dp.png").
+					Size(24, 24),
+			),
+		)
+
+	giu.Window("Side Bar").
+		Size(sideBarS.geometry[0], sideBarS.geometry[1]).
+		Pos(sideBarS.geometry[2], sideBarS.geometry[3]).
+		Flags(defaultFlags).
+		Layout(
+			giu.Column(
+				giu.ImageWithFile("icons/home_white_icon_48dp.png").
+					Size(24, 24),
+			),
 		)
 
 	giu.Window("Menu Bar").
@@ -262,13 +319,18 @@ func loop() {
 			),
 		)
 
+	// Create a list of interfaces converted from struct
+	for i := range appsI {
+		appsI[i] = AppI(appsS.appsList[i])
+	}
+
 	// The app consists of 2 main windows:
 	// "Main Menu" and "Apps Layout"
 	if sideMenuS.toggled {
 		giu.Window("Main Menu").
 			// Size = LHN Menu-like size and position
 			Size(sideMenuS.geometry[0], layoutS.geometry[1]).
-			Pos(0, menuBarS.geometry[1]).
+			Pos(0, TopBarS.geometry[1]).
 			Flags(defaultFlags).
 			Layout(
 				giu.Child().
@@ -455,7 +517,7 @@ func buildAppsLayout() {
 							layoutS.geometry[0] / 2,
 							layoutS.geometry[1],
 							sideMenuS.geometry[0],
-							menuBarS.geometry[1],
+							TopBarS.geometry[1],
 						}
 						layoutS.runningWindows[i].layoutSlot = i + 1
 					} else {
@@ -464,7 +526,7 @@ func buildAppsLayout() {
 							layoutS.runningWindows[0].geometry[0],
 							layoutS.runningWindows[0].geometry[1],
 							layoutS.geometry[0] - layoutS.runningWindows[0].geometry[0],
-							menuBarS.geometry[1],
+							TopBarS.geometry[1],
 						}
 						layoutS.runningWindows[i].layoutSlot = i + 1
 					}
