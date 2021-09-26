@@ -76,7 +76,7 @@ func loop() {
 	//TODO: very broken and easy to fix!
 	for i := range design.LayoutS.CurrCombination {
 		if design.LayoutS.CurrCombination[i] != design.LayoutS.PrevCombination[i] {
-			design.LayoutS.IsButtonDisabled = true
+			design.LayoutS.IsButtonDisabled = false
 		}
 	}
 
@@ -85,6 +85,10 @@ func loop() {
 		fullHeight - (design.TopBarS.Geometry[1] + design.BottomBarS.Geometry[1]),
 		design.SideMenuS.Geometry[0],
 		design.TopBarS.Geometry[1],
+	}
+
+	if design.LayoutS.IsButtonTriggered {
+		buildAppsLayout()
 	}
 
 	// Toggle Dashboard on start and when there are no apps selected
@@ -101,7 +105,7 @@ func loop() {
 			currWin := design.LayoutS.RunningWindows[i]
 			giu.Window(currWin.Title).
 				//TODO this should be the actual size!!
-				Size((fullWidth-(design.SideMenuS.Geometry[0]+design.SideBarS.Geometry[0]))/2, currWin.Geometry[1]).
+				Size(currWin.Geometry[0], currWin.Geometry[1]).
 				Pos(currWin.Geometry[2], currWin.Geometry[3]).
 				Flags(defaultFlags).
 				Layout(
@@ -288,7 +292,7 @@ func loop() {
 }
 
 //TODO: very broken and easy to fix!
-func BuildAppsLayout() {
+func buildAppsLayout() {
 	if design.LayoutS.CurrCombination != nil {
 		for i := 0; i < 3; i++ {
 			design.LayoutS.PrevCombination[i] = design.LayoutS.CurrCombination[i]
@@ -336,7 +340,7 @@ func BuildAppsLayout() {
 					if i%2 == 0 {
 						design.LayoutS.RunningWindows[i].Title = fmt.Sprintf("Window %d", i+1)
 						design.LayoutS.RunningWindows[i].Geometry = []float32{
-							design.LayoutS.Geometry[0] / 2,
+							(fullWidth - (design.SideMenuS.Geometry[0] + design.SideBarS.Geometry[0])) / 2,
 							design.LayoutS.Geometry[1],
 							design.SideMenuS.Geometry[0],
 							design.TopBarS.Geometry[1],
