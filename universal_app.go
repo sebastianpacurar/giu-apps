@@ -73,6 +73,13 @@ func loop() {
 		design.SideMenuS.Geometry[0] = 0
 	}
 
+	//TODO: very broken and easy to fix!
+	for i := range design.LayoutS.CurrCombination {
+		if design.LayoutS.CurrCombination[i] != design.LayoutS.PrevCombination[i] {
+			design.LayoutS.IsButtonDisabled = true
+		}
+	}
+
 	design.LayoutS.Geometry = []float32{
 		fullWidth - (design.SideMenuS.Geometry[0] + design.SideBarS.Geometry[0]),
 		fullHeight - (design.TopBarS.Geometry[1] + design.BottomBarS.Geometry[1]),
@@ -80,36 +87,28 @@ func loop() {
 		design.TopBarS.Geometry[1],
 	}
 
-	// TODO: Currently on hold
 	// Toggle Dashboard on start and when there are no apps selected
-	//if design.layoutS.isDashboardView {
-	//	giu.Window("Dashboard").
-	//		Size(design.layoutS.Geometry[0], design.layoutS.Geometry[1]).
-	//		Pos(design.layoutS.Geometry[2], TopBarS.Geometry[1]).
-	//		Flags(defaultFlags).
-	//		Layout(
-	//			giu.Label("Dashboard"),
-	//		)
-	//} else {
-	//	for i := range design.layoutS.RunningWindows {
-	//		currWin := design.layoutS.RunningWindows[i]
-	//		giu.Window(currWin.Title).
-	//			Size(currWin.Geometry[0], currWin.Geometry[1]).
-	//			Pos(currWin.Geometry[2], currWin.Geometry[3]).
-	//			Flags(defaultFlags).
-	//			Layout(
-	//				giu.Label(currWin.Title),
-	//			)
-	//	}
-	//}
-
-	giu.Window("Dashboard").
-		Size(design.LayoutS.Geometry[0], design.LayoutS.Geometry[1]).
-		Pos(design.LayoutS.Geometry[2], design.TopBarS.Geometry[1]).
-		Flags(defaultFlags).
-		Layout(
-			giu.Label("Dashboard"),
-		)
+	if design.LayoutS.IsDashboardView {
+		giu.Window("Dashboard").
+			Size(design.LayoutS.Geometry[0], design.LayoutS.Geometry[1]).
+			Pos(design.LayoutS.Geometry[2], design.TopBarS.Geometry[1]).
+			Flags(defaultFlags).
+			Layout(
+				giu.Label("Dashboard"),
+			)
+	} else {
+		for i := range design.LayoutS.RunningWindows {
+			currWin := design.LayoutS.RunningWindows[i]
+			giu.Window(currWin.Title).
+				//TODO this should be the actual size!!
+				Size((fullWidth-(design.SideMenuS.Geometry[0]+design.SideBarS.Geometry[0]))/2, currWin.Geometry[1]).
+				Pos(currWin.Geometry[2], currWin.Geometry[3]).
+				Flags(defaultFlags).
+				Layout(
+					giu.Label(currWin.Title),
+				)
+		}
+	}
 
 	giu.Window("Bottom Bar").
 		Size(design.BottomBarS.Geometry[0], design.BottomBarS.Geometry[1]).
@@ -232,11 +231,14 @@ func loop() {
 										),
 									// The Button below triggers buildAppsLayout function,
 									// And will appear as Disabled if the combination maps are the same
-									giu.Button("waiting fix").
+									giu.Button("Build Layout").
 										Size(giu.Auto, 25).
 										// TODO: currently on hold
-										//OnClick(buildAppsLayout).
-										Disabled(true),
+										OnClick(func() {
+											design.LayoutS.IsButtonTriggered = !design.LayoutS.IsButtonTriggered
+											design.LayoutS.IsButtonDisabled = true
+										}).
+										Disabled(design.LayoutS.IsButtonDisabled),
 								),
 							),
 
@@ -285,20 +287,8 @@ func loop() {
 	}
 }
 
-// TODO: currently on hold
-func isBuildLayoutBtnDisabled() bool {
-	res := true
-	for i := range design.LayoutS.CurrCombination {
-		if design.LayoutS.CurrCombination[i] == design.LayoutS.PrevCombination[i] {
-			res = false
-			break
-		}
-	}
-	return res
-}
-
-// TODO: currently on hold
-func buildAppsLayout() {
+//TODO: very broken and easy to fix!
+func BuildAppsLayout() {
 	if design.LayoutS.CurrCombination != nil {
 		for i := 0; i < 3; i++ {
 			design.LayoutS.PrevCombination[i] = design.LayoutS.CurrCombination[i]

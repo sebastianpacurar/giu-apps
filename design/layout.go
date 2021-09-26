@@ -1,18 +1,20 @@
 package design
 
 type Layout struct {
-	Geometry                                  []float32
-	TypesIndex, WindowsIndex, DirectionsIndex int32
-	ComboTypesOptions                         []string
-	ComboWindowsOptions                       []string
-	ComboDirectionOptions                     []string
-	CurrWindowsNo                             int
-	CurrType                                  string
-	CurrDirection                             string
-	CurrCombination                           []string
-	PrevCombination                           []string
-	RunningWindows                            []*Window
-	IsDashboardView                           bool
+	Geometry                                  []float32 // [width, height, posX, posY]
+	TypesIndex, WindowsIndex, DirectionsIndex int32     // combo box
+	ComboTypesOptions                         []string  // combo box
+	ComboWindowsOptions                       []string  // combo box
+	ComboDirectionOptions                     []string  // combo box
+	CurrWindowsNo                             int       // current active window(s) number
+	CurrType                                  string    // current layout type (window/splitter)
+	CurrDirection                             string    // current orientation (vertical/horizontal/grid)
+	CurrCombination                           []string  // current combination (type/windowsNo/orientation)
+	PrevCombination                           []string  // previous combination (types/windowsNo/orientation)
+	RunningWindows                            []*Window // current batch of active windows
+	IsDashboardView                           bool      // in case there are no active windows
+	IsButtonTriggered                         bool      // toggle if button gets clicked
+	IsButtonDisabled                          bool      // disable button if currCombo != prevComo
 }
 
 type Window struct {
@@ -23,16 +25,20 @@ type Window struct {
 
 var (
 	LayoutS = &Layout{
-		Geometry:              make([]float32, 4),
-		ComboTypesOptions:     []string{"Window", "Splitter"},
-		ComboWindowsOptions:   []string{"1", "2"},
-		ComboDirectionOptions: []string{"Vertical", "Horizontal", "Grid"},
+		Geometry: make([]float32, 4),
+		//ComboTypesOptions:     []string{"Window", "Splitter"},
+		ComboTypesOptions:   []string{"Window"},
+		ComboWindowsOptions: []string{"1", "2"},
+		//ComboDirectionOptions: []string{"Vertical", "Horizontal", "Grid"},
+		ComboDirectionOptions: []string{"Vertical"},
 		CurrType:              "Window",
 		CurrDirection:         "Vertical",
 		CurrWindowsNo:         0,
-		PrevCombination:       []string{"Window", "1", "Vertical"},
+		PrevCombination:       make([]string, 3),
 		CurrCombination:       []string{"Window", "1", "Vertical"},
 		IsDashboardView:       true,
+		IsButtonTriggered:     false,
+		IsButtonDisabled:      false,
 
 		// TODO: currently on hold
 		//runningWindows: []*Window{
