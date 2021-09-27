@@ -54,26 +54,16 @@ func loop() {
 		23,
 	}
 	design.SideMenuS.Geometry = []float32{
-		fullWidth / 4,
+		300,
 		fullHeight - (design.TopBarS.Geometry[1] + design.BottomBarS.Geometry[1]),
 		0,
 		23,
-	}
-
-	// For sizes bigger than 990px use responsive width
-	// If the Main Menu is closed, then stretch Apps Window to full width
-	// TODO: this might be an issue
-	if int(fullWidth) <= 840 {
-		design.SideMenuS.Geometry[0] = 211
-	} else if int(fullWidth) >= 1184 {
-		design.SideMenuS.Geometry[0] = 290
 	}
 
 	if !design.SideMenuS.Toggled {
 		design.SideMenuS.Geometry[0] = 0
 	}
 
-	// TODO: handle the windows here
 	design.AppLayoutS.Geometry = []float32{
 		fullWidth - (design.SideMenuS.Geometry[0] + design.SideBarS.Geometry[0]),
 		fullHeight - (design.TopBarS.Geometry[1] + design.BottomBarS.Geometry[1]),
@@ -81,18 +71,43 @@ func loop() {
 		design.TopBarS.Geometry[1],
 	}
 
-	if design.AppLayoutS.IsButtonTriggered {
-		buildAppsAppLayout()
-	}
+	giu.Window("Apps Window").
+		Size(design.AppLayoutS.Geometry[0], design.AppLayoutS.Geometry[1]).
+		Pos(design.AppLayoutS.Geometry[2], design.AppLayoutS.Geometry[3]).
+		Flags(defaultFlags | giu.WindowFlagsMenuBar).
+		Layout(
+			giu.RangeBuilder("App Screen", design.AppsI, func(i int, v interface{}) giu.Widget {
+				currApp := &design.AppsS.AppsList[i]
+				miniAppsTabs := make([]string, len(currApp.MiniApps))
+
+				for i := range miniAppsTabs {
+					miniAppsTabs[i] = currApp.MiniApps[i].Name
+				}
+
+				miniAppsI := make([]interface{}, len(currApp.MiniApps))
+				for i := range miniAppsI {
+					miniAppsI[i] = design.MiniAppI(currApp.MiniApps[i])
+				}
+				return giu.Condition(
+					currApp.Active,
+					giu.Layout{
+						giu.MenuBar().Layout(
+							giu.RangeBuilder("Sub Menu", miniAppsI, func(j int, v interface{}) giu.Widget {
+								return giu.Label(currApp.MiniApps[j].Name).Font(smallFont)
+							}),
+						),
+						giu.Child(),
+					}, nil,
+				)
+			}),
+		)
 
 	// Toggle Dashboard on start and when there are no apps selected
-	giu.Window("Dashboard").
+	giu.Window("Main").
 		Size(design.AppLayoutS.Geometry[0], design.AppLayoutS.Geometry[1]).
 		Pos(design.AppLayoutS.Geometry[2], design.TopBarS.Geometry[1]).
 		Flags(defaultFlags).
-		Layout(
-			giu.Label("Dashboard"),
-		)
+		Layout()
 
 	giu.Window("Bottom Bar").
 		Size(design.BottomBarS.Geometry[0], design.BottomBarS.Geometry[1]).
@@ -168,59 +183,57 @@ func loop() {
 							),
 
 						// AppLayout Menu
-						giu.TreeNode("AppLayout").
-							Flags(giu.TreeNodeFlagsCollapsingHeader|giu.TreeNodeFlagsDefaultOpen).
-							Layout(
-								giu.Column(
-									giu.Style().
-										To(
-											giu.Table().
-												Size(giu.Auto, 45).
-												Flags(
-													giu.TableFlagsBorders,
-												).
-												Columns(
-													giu.TableColumn("Windows").Flags(giu.TableColumnFlagsWidthStretch),
-													giu.TableColumn("Orientation").Flags(giu.TableColumnFlagsWidthStretch),
-												).
-												Rows(
-
-													// TODO: Implement Iterative way to avoid redundancy
-													giu.TableRow(
-														giu.Combo("", design.AppLayoutS.ComboWinLayoutsOptions[design.AppLayoutS.WindowsIndex], design.AppLayoutS.ComboWinLayoutsOptions, &design.AppLayoutS.WindowsIndex).
-															Flags(giu.ComboFlagHeightSmall|giu.ComboFlagNoArrowButton).
-															Size(design.SideMenuS.Geometry[0]/2-25).
-															OnChange(func() {
-																design.AppLayoutS.CurrWindowsNo = int(design.AppLayoutS.WindowsIndex) + 1
-															}),
-
-														giu.Combo("", design.AppLayoutS.ComboDirectionOptions[design.AppLayoutS.DirectionsIndex], design.AppLayoutS.ComboDirectionOptions, &design.AppLayoutS.DirectionsIndex).
-															Size((design.SideMenuS.Geometry[0]/2)-25).
-															Flags(giu.ComboFlagHeightSmall|giu.ComboFlagNoArrowButton).
-															OnChange(func() {
-																design.AppLayoutS.CurrDirection = design.AppLayoutS.ComboDirectionOptions[design.AppLayoutS.DirectionsIndex]
-															}),
-													),
-												),
-										),
-									// The Button below triggers buildAppsAppLayout function,
-									// And will appear as Disabled if the combination maps are the same
-									giu.Button("Build Layout").
-										Size(giu.Auto, 25).
-										// TODO: currently on hold
-										OnClick(func() {
-											design.AppLayoutS.IsButtonTriggered = !design.AppLayoutS.IsButtonTriggered
-											design.AppLayoutS.IsButtonDisabled = true
-										}).
-										Disabled(design.AppLayoutS.IsButtonDisabled),
-								),
-							),
-
-						giu.Style().
-							SetColor(giu.StyleColorSeparator, color.RGBA{G: 255, B: 255, A: 255}).
-							To(
-								giu.Separator(),
-							),
+						//giu.TreeNode("AppLayout").
+						//	Flags(giu.TreeNodeFlagsCollapsingHeader|giu.TreeNodeFlagsDefaultOpen).
+						//	Layout(
+						//		giu.Column(
+						//			giu.Style().
+						//				To(
+						//					giu.Table().
+						//						Size(giu.Auto, 45).
+						//						Flags(
+						//							giu.TableFlagsBorders,
+						//						).
+						//						Columns(
+						//							giu.TableColumn("Windows").Flags(giu.TableColumnFlagsWidthStretch),
+						//							giu.TableColumn("Orientation").Flags(giu.TableColumnFlagsWidthStretch),
+						//						).
+						//						Rows(
+						//
+						//							// TODO: Implement Iterative way to avoid redundancy
+						//							giu.TableRow(
+						//								giu.Combo("", design.AppLayoutS.ComboWinLayoutsOptions[design.AppLayoutS.WindowsIndex], design.AppLayoutS.ComboWinLayoutsOptions, &design.AppLayoutS.WindowsIndex).
+						//									Flags(giu.ComboFlagHeightSmall|giu.ComboFlagNoArrowButton).
+						//									Size(design.SideMenuS.Geometry[0]/2-25).
+						//									OnChange(func() {
+						//										design.AppLayoutS.CurrWindowsNo = int(design.AppLayoutS.WindowsIndex) + 1
+						//									}),
+						//
+						//								giu.Combo("", design.AppLayoutS.ComboDirectionOptions[design.AppLayoutS.DirectionsIndex], design.AppLayoutS.ComboDirectionOptions, &design.AppLayoutS.DirectionsIndex).
+						//									Size((design.SideMenuS.Geometry[0]/2)-25).
+						//									Flags(giu.ComboFlagHeightSmall|giu.ComboFlagNoArrowButton).
+						//									OnChange(func() {
+						//										design.AppLayoutS.CurrDirection = design.AppLayoutS.ComboDirectionOptions[design.AppLayoutS.DirectionsIndex]
+						//									}),
+						//							),
+						//						),
+						//				),
+						//			// The Button below triggers buildAppsAppLayout function,
+						//			// And will appear as Disabled if the combination maps are the same
+						//			giu.Button("Build Layout").
+						//				Size(giu.Auto, 25).
+						//				// TODO: currently on hold
+						//				OnClick(func() {
+						//					design.AppLayoutS.IsButtonTriggered = !design.AppLayoutS.IsButtonTriggered
+						//				}),
+						//		),
+						//	),
+						//
+						//giu.Style().
+						//	SetColor(giu.StyleColorSeparator, color.RGBA{G: 255, B: 255, A: 255}).
+						//	To(
+						//		giu.Separator(),
+						//	),
 
 						// APPS Menu
 						giu.TreeNode("Apps").
@@ -263,20 +276,10 @@ func loop() {
 
 //TODO: very broken and easy to fix!
 func buildAppsAppLayout() {
-	if design.AppLayoutS.CurrCombination != nil {
-		for i := 0; i < 3; i++ {
-			design.AppLayoutS.PrevCombination[i] = design.AppLayoutS.CurrCombination[i]
-		}
-	}
 
 	design.AppLayoutS.CurrCombination = []string{
 		strconv.Itoa(design.AppLayoutS.CurrWindowsNo),
 		design.AppLayoutS.CurrDirection,
-	}
-
-	design.AppLayoutS.ActiveWindows = make([]*design.Window, design.AppLayoutS.CurrWindowsNo)
-	for i := range design.AppLayoutS.ActiveWindows {
-		design.AppLayoutS.ActiveWindows[i] = &design.Window{}
 	}
 
 	// TODO: Implement switch below
