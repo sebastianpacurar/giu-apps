@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"github.com/AllenDang/giu"
 	"image/color"
+	"imgui-based-app/custom-widgets"
 	"imgui-based-app/design"
 	"strconv"
 )
@@ -96,21 +98,10 @@ func loop() {
 								giu.RangeBuilder("Sub Menu", miniAppsI, func(j int, v interface{}) giu.Widget {
 									return giu.Condition(
 										currApp.MiniApps[j].Active,
-
 										giu.Layout{
-											giu.Condition(
-												currApp.MiniApps[j].Current,
-												giu.Layout{
-													giu.Style().
-														SetColor(giu.StyleColorText, color.RGBA{G: 255, A: 255}).
-														To(
-															giu.Label(currApp.MiniApps[j].Name),
-														),
-												},
-												giu.Layout{
-													giu.Label(currApp.MiniApps[j].Name),
-												},
-											),
+											custom_widgets.MyTabItem(currApp.MiniApps[j].Name, currApp.MiniApps[j].Current, func() {
+												fmt.Println(currApp.MiniApps[j].Name)
+											}),
 										},
 										nil,
 									)

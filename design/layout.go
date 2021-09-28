@@ -10,7 +10,6 @@ type AppLayout struct {
 	CurrCombination   []string // current combination (type/windowsNo/orientation)
 	IsDashboardView   bool     // in case there are no active windows
 	IsButtonTriggered bool     // toggle if button gets clicked
-	Apps
 }
 
 var (
