@@ -91,12 +91,41 @@ func loop() {
 				return giu.Condition(
 					currApp.Active,
 					giu.Layout{
-						giu.MenuBar().Layout(
-							giu.RangeBuilder("Sub Menu", miniAppsI, func(j int, v interface{}) giu.Widget {
-								return giu.Label(currApp.MiniApps[j].Name).Font(smallFont)
-							}),
-						),
-						giu.Child(),
+						giu.MenuBar().
+							Layout(
+								giu.RangeBuilder("Sub Menu", miniAppsI, func(j int, v interface{}) giu.Widget {
+									return giu.Condition(
+										currApp.MiniApps[j].Active,
+
+										giu.Layout{
+											giu.Condition(
+												currApp.MiniApps[j].Current,
+												giu.Layout{
+													giu.Style().
+														SetColor(giu.StyleColorText, color.RGBA{G: 255, A: 255}).
+														To(
+															giu.Label(currApp.MiniApps[j].Name),
+														),
+												},
+												giu.Layout{
+													giu.Label(currApp.MiniApps[j].Name),
+												},
+											),
+										},
+										nil,
+									)
+								}),
+							),
+						giu.RangeBuilder("Content of Current Mini App", miniAppsI, func(j int, v interface{}) giu.Widget {
+							return giu.Condition(
+								currApp.MiniApps[j].Current,
+								giu.Layout{
+									giu.Child().Layout(
+										giu.Label(currApp.MiniApps[j].Name),
+									),
+								}, nil,
+							)
+						}),
 					}, nil,
 				)
 			}),

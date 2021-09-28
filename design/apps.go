@@ -20,9 +20,10 @@ type App struct {
 }
 
 type MiniApp struct {
-	Name   string
-	Active bool
-	Screen int
+	Name    string
+	Active  bool
+	Current bool
+	Screen  int
 }
 
 // appsS - The struct of the Menu
@@ -37,19 +38,22 @@ var (
 				Screens: 1,
 				MiniApps: []MiniApp{
 					{
-						Name:   "Text Editor",
-						Active: true,
-						Screen: 1,
+						Name:    "Text Editor",
+						Active:  true,
+						Current: true,
+						Screen:  1,
 					},
 					{
-						Name:   "Bash Console",
-						Active: false,
-						Screen: 1,
+						Name:    "Bash Console",
+						Active:  false,
+						Current: false,
+						Screen:  1,
 					},
 					{
-						Name:   "JSON Formatter",
-						Active: false,
-						Screen: 1,
+						Name:    "JSON Formatter",
+						Active:  false,
+						Current: false,
+						Screen:  1,
 					},
 				},
 			},
@@ -60,14 +64,16 @@ var (
 				Screens: 1,
 				MiniApps: []MiniApp{
 					{
-						Name:   "All Countries",
-						Active: false,
-						Screen: 1,
+						Name:    "All Countries",
+						Active:  false,
+						Current: false,
+						Screen:  1,
 					},
 					{
-						Name:   "Map",
-						Active: false,
-						Screen: 1,
+						Name:    "Map",
+						Active:  false,
+						Current: false,
+						Screen:  1,
 					},
 				},
 			},
@@ -78,9 +84,10 @@ var (
 				Screens: 1,
 				MiniApps: []MiniApp{
 					{
-						Name:   "English",
-						Active: false,
-						Screen: 1,
+						Name:    "English",
+						Active:  false,
+						Current: false,
+						Screen:  1,
 					},
 				},
 			},
@@ -91,19 +98,22 @@ var (
 				Screens: 1,
 				MiniApps: []MiniApp{
 					{
-						Name:   "Calculator",
-						Active: false,
-						Screen: 1,
+						Name:    "Calculator",
+						Active:  false,
+						Current: false,
+						Screen:  1,
 					},
 					{
-						Name:   "Geometry",
-						Active: false,
-						Screen: 1,
+						Name:    "Geometry",
+						Active:  false,
+						Current: false,
+						Screen:  1,
 					},
 					{
-						Name:   "Trigonometry",
-						Active: false,
-						Screen: 1,
+						Name:    "Trigonometry",
+						Active:  false,
+						Current: false,
+						Screen:  1,
 					},
 				},
 			},
