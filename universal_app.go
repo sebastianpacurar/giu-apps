@@ -201,59 +201,6 @@ func loop() {
 								giu.Separator(),
 							),
 
-						// AppLayout Menu
-						//giu.TreeNode("AppLayout").
-						//	Flags(giu.TreeNodeFlagsCollapsingHeader|giu.TreeNodeFlagsDefaultOpen).
-						//	Layout(
-						//		giu.Column(
-						//			giu.Style().
-						//				To(
-						//					giu.Table().
-						//						Size(giu.Auto, 45).
-						//						Flags(
-						//							giu.TableFlagsBorders,
-						//						).
-						//						Columns(
-						//							giu.TableColumn("Windows").Flags(giu.TableColumnFlagsWidthStretch),
-						//							giu.TableColumn("Orientation").Flags(giu.TableColumnFlagsWidthStretch),
-						//						).
-						//						Rows(
-						//
-						//							// TODO: Implement Iterative way to avoid redundancy
-						//							giu.TableRow(
-						//								giu.Combo("", design.AppLayoutS.ComboWinLayoutsOptions[design.AppLayoutS.WindowsIndex], design.AppLayoutS.ComboWinLayoutsOptions, &design.AppLayoutS.WindowsIndex).
-						//									Flags(giu.ComboFlagHeightSmall|giu.ComboFlagNoArrowButton).
-						//									Size(design.SideMenuS.Geometry[0]/2-25).
-						//									OnChange(func() {
-						//										design.AppLayoutS.CurrWindowsNo = int(design.AppLayoutS.WindowsIndex) + 1
-						//									}),
-						//
-						//								giu.Combo("", design.AppLayoutS.ComboDirectionOptions[design.AppLayoutS.DirectionsIndex], design.AppLayoutS.ComboDirectionOptions, &design.AppLayoutS.DirectionsIndex).
-						//									Size((design.SideMenuS.Geometry[0]/2)-25).
-						//									Flags(giu.ComboFlagHeightSmall|giu.ComboFlagNoArrowButton).
-						//									OnChange(func() {
-						//										design.AppLayoutS.CurrDirection = design.AppLayoutS.ComboDirectionOptions[design.AppLayoutS.DirectionsIndex]
-						//									}),
-						//							),
-						//						),
-						//				),
-						//			// The Button below triggers buildAppsAppLayout function,
-						//			// And will appear as Disabled if the combination maps are the same
-						//			giu.Button("Build Layout").
-						//				Size(giu.Auto, 25).
-						//				// TODO: currently on hold
-						//				OnClick(func() {
-						//					design.AppLayoutS.IsButtonTriggered = !design.AppLayoutS.IsButtonTriggered
-						//				}),
-						//		),
-						//	),
-						//
-						//giu.Style().
-						//	SetColor(giu.StyleColorSeparator, color.RGBA{G: 255, B: 255, A: 255}).
-						//	To(
-						//		giu.Separator(),
-						//	),
-
 						// APPS Menu
 						giu.Table().
 							Flags(giu.TableFlagsBorders).
@@ -263,36 +210,6 @@ func loop() {
 							).Rows(
 							buildAppsRows()...,
 						),
-						// This is where the Main Menu items is generated
-						//giu.RangeBuilder("Menu", design.AppsI, func(i int, v interface{}) giu.Widget {
-						//	currApp := &design.AppsS.AppsList[i]
-						//	miniAppsI := make([]interface{}, len(currApp.MiniApps))
-						//	for i := range miniAppsI {
-						//		miniAppsI[i] = design.MiniAppI(currApp.MiniApps[i])
-						//	}
-						//	return giu.TableRow(
-						//		currApp.Name
-						//	Flags(giu.TreeNodeFlagsSpanFullWidth).
-						//		Layout(
-						//			// This is where the Sub Menu for every Menu Item will be generated
-						//			giu.RangeBuilder("Sub Menu", miniAppsI, func(j int, v interface{}) giu.Widget {
-						//				currMiniApp := &currApp.MiniApps[j]
-						//				return giu.Row(
-						//					// checkbox which has green thick when checked
-						//					giu.Style().
-						//						SetColor(giu.StyleColorCheckMark, color.RGBA{G: 255, A: 255}).
-						//						To(
-						//							giu.Checkbox("", &currMiniApp.Active),
-						//						),
-						//					giu.Selectable(currMiniApp.Name).
-						//						OnClick(func() {
-						//							currMiniApp.Active = !currMiniApp.Active
-						//						}).
-						//						Selected(currMiniApp.Active),
-						//				)
-						//			}),
-						//		)
-						//}),
 					),
 			)
 	}
@@ -311,16 +228,24 @@ func buildAppsRows() []*giu.TableRowWidget {
 			giu.RangeBuilder("Sub Menu", miniAppsI, func(j int, v interface{}) giu.Widget {
 				return giu.Row(
 					// checkbox which has green thick when checked
-					giu.Style().
-						SetColor(giu.StyleColorCheckMark, color.RGBA{G: 255, A: 255}).
-						To(
-							giu.Checkbox("", &design.AppsS.AppsList[i].MiniApps[j].Active),
-						),
-					giu.Selectable(design.AppsS.AppsList[i].MiniApps[j].Name).
-						OnClick(func() {
-							design.AppsS.AppsList[i].MiniApps[j].Active = !design.AppsS.AppsList[i].MiniApps[j].Active
-						}).
-						Selected(design.AppsS.AppsList[i].MiniApps[j].Active),
+					giu.Condition(
+						design.AppsS.AppsList[i].MiniApps[j].Active,
+						giu.Layout{
+							giu.Style().
+								SetColor(giu.StyleColorText, color.RGBA{G: 255, A: 255}).
+								To(
+									giu.Selectable(design.AppsS.AppsList[i].MiniApps[j].Name).
+										OnClick(func() {
+											design.AppsS.AppsList[i].MiniApps[j].Active = !design.AppsS.AppsList[i].MiniApps[j].Active
+										}).Selected(design.AppsS.AppsList[i].MiniApps[j].Active),
+								),
+						}, giu.Layout{
+							giu.Selectable(design.AppsS.AppsList[i].MiniApps[j].Name).
+								OnClick(func() {
+									design.AppsS.AppsList[i].MiniApps[j].Active = !design.AppsS.AppsList[i].MiniApps[j].Active
+								}).Selected(design.AppsS.AppsList[i].MiniApps[j].Active),
+						},
+					),
 				)
 			}),
 		)
