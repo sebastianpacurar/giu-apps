@@ -1,47 +1,25 @@
 package design
 
-type Layout struct {
-	Geometry                                  []float32
-	TypesIndex, WindowsIndex, DirectionsIndex int32
-	ComboTypesOptions                         []string
-	ComboWindowsOptions                       []string
-	ComboDirectionOptions                     []string
-	CurrWindowsNo                             int
-	CurrType                                  string
-	CurrDirection                             string
-	CurrCombination                           []string
-	PrevCombination                           []string
-	RunningWindows                            []*Window
-	IsDashboardView                           bool
-}
-
-type Window struct {
-	Title      string
-	Geometry   []float32
-	LayoutSlot int
+type AppLayout struct {
+	Geometry []float32 // [width, height, posX, posY]
+	//WindowsIndex, DirectionsIndex int32     // combo box
+	//ComboWinLayoutsOptions        []string  // combo box
+	//ComboDirectionOptions         []string  // combo box
+	CurrWindowsNo     int      // current active window(s) number
+	CurrDirection     string   // current orientation (vertical/horizontal/grid)
+	CurrCombination   []string // current combination (type/windowsNo/orientation)
+	IsDashboardView   bool     // in case there are no active windows
+	IsButtonTriggered bool     // toggle if button gets clicked
 }
 
 var (
-	LayoutS = &Layout{
-		Geometry:              make([]float32, 4),
-		ComboTypesOptions:     []string{"Window", "Splitter"},
-		ComboWindowsOptions:   []string{"1", "2"},
-		ComboDirectionOptions: []string{"Vertical", "Horizontal", "Grid"},
-		CurrType:              "Window",
-		CurrDirection:         "Vertical",
-		CurrWindowsNo:         0,
-		PrevCombination:       []string{"Window", "1", "Vertical"},
-		CurrCombination:       []string{"Window", "1", "Vertical"},
-		IsDashboardView:       true,
-
-		// TODO: currently on hold
-		//runningWindows: []*Window{
-		//	{
-		//		// first element is the initial setup
-		//		title:      "Dashboard",
-		//		geometry:   make([]float32, 4),
-		//		layoutSlot: 1,
-		//	},
-		//},
+	AppLayoutS = &AppLayout{
+		Geometry: make([]float32, 4),
+		//ComboWinLayoutsOptions: []string{"1", "2"},
+		//ComboDirectionOptions:  []string{"Vertical"},
+		//CurrDirection:          "Vertical",
+		//CurrCombination:        []string{"1", "Vertical"},
+		IsDashboardView:   true,
+		IsButtonTriggered: false,
 	}
 )

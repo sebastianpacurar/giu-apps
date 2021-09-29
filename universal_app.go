@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/AllenDang/giu"
 	"image/color"
+	"imgui-based-app/custom-widgets"
 	"imgui-based-app/design"
-	"strconv"
 )
 
 // Data related to the App Layout handling
@@ -55,61 +55,78 @@ func loop() {
 		23,
 	}
 	design.SideMenuS.Geometry = []float32{
-		fullWidth / 4,
+		300,
 		fullHeight - (design.TopBarS.Geometry[1] + design.BottomBarS.Geometry[1]),
 		0,
 		23,
-	}
-
-	// For sizes bigger than 990px use responsive width
-	// If the Main Menu is closed, then stretch Apps Window to full width
-	if int(fullWidth) <= 990 {
-		design.SideMenuS.Geometry[0] = 250
-	} else if int(fullWidth) >= 1200 {
-		design.SideMenuS.Geometry[0] = 300
 	}
 
 	if !design.SideMenuS.Toggled {
 		design.SideMenuS.Geometry[0] = 0
 	}
 
-	design.LayoutS.Geometry = []float32{
+	design.AppLayoutS.Geometry = []float32{
 		fullWidth - (design.SideMenuS.Geometry[0] + design.SideBarS.Geometry[0]),
 		fullHeight - (design.TopBarS.Geometry[1] + design.BottomBarS.Geometry[1]),
 		design.SideMenuS.Geometry[0],
 		design.TopBarS.Geometry[1],
 	}
 
-	// TODO: Currently on hold
-	// Toggle Dashboard on start and when there are no apps selected
-	//if design.layoutS.isDashboardView {
-	//	giu.Window("Dashboard").
-	//		Size(design.layoutS.Geometry[0], design.layoutS.Geometry[1]).
-	//		Pos(design.layoutS.Geometry[2], TopBarS.Geometry[1]).
-	//		Flags(defaultFlags).
-	//		Layout(
-	//			giu.Label("Dashboard"),
-	//		)
-	//} else {
-	//	for i := range design.layoutS.RunningWindows {
-	//		currWin := design.layoutS.RunningWindows[i]
-	//		giu.Window(currWin.Title).
-	//			Size(currWin.Geometry[0], currWin.Geometry[1]).
-	//			Pos(currWin.Geometry[2], currWin.Geometry[3]).
-	//			Flags(defaultFlags).
-	//			Layout(
-	//				giu.Label(currWin.Title),
-	//			)
-	//	}
-	//}
-
-	giu.Window("Dashboard").
-		Size(design.LayoutS.Geometry[0], design.LayoutS.Geometry[1]).
-		Pos(design.LayoutS.Geometry[2], design.TopBarS.Geometry[1]).
-		Flags(defaultFlags).
+	giu.Window("Apps Window").
+		Size(design.AppLayoutS.Geometry[0], design.AppLayoutS.Geometry[1]).
+		Pos(design.AppLayoutS.Geometry[2], design.AppLayoutS.Geometry[3]).
+		Flags(defaultFlags | giu.WindowFlagsMenuBar).
 		Layout(
-			giu.Label("Dashboard"),
+			giu.RangeBuilder("App Screen", design.AppsI, func(i int, v interface{}) giu.Widget {
+				currApp := &design.AppsS.AppsList[i]
+				miniAppsTabs := make([]string, len(currApp.MiniApps))
+
+				for i := range miniAppsTabs {
+					miniAppsTabs[i] = currApp.MiniApps[i].Name
+				}
+
+				miniAppsI := make([]interface{}, len(currApp.MiniApps))
+				for i := range miniAppsI {
+					miniAppsI[i] = design.MiniAppI(currApp.MiniApps[i])
+				}
+				return giu.Condition(
+					currApp.Active,
+					giu.Layout{
+						giu.MenuBar().
+							Layout(
+								giu.RangeBuilder("Sub Menu", miniAppsI, func(j int, v interface{}) giu.Widget {
+									return giu.Condition(
+										currApp.MiniApps[j].Active,
+										giu.Layout{
+											custom_widgets.MyTabItem(currApp.MiniApps[j].Name, currApp.MiniApps[j].Current, func() {
+												fmt.Println(currApp.MiniApps[j].Name)
+											}),
+										},
+										nil,
+									)
+								}),
+							),
+						giu.RangeBuilder("Content of Current Mini App", miniAppsI, func(j int, v interface{}) giu.Widget {
+							return giu.Condition(
+								currApp.MiniApps[j].Current,
+								giu.Layout{
+									giu.Child().Layout(
+										giu.Label(currApp.MiniApps[j].Name),
+									),
+								}, nil,
+							)
+						}),
+					}, nil,
+				)
+			}),
 		)
+
+	// Toggle Dashboard on start and when there are no apps selected
+	giu.Window("Main").
+		Size(design.AppLayoutS.Geometry[0], design.AppLayoutS.Geometry[1]).
+		Pos(design.AppLayoutS.Geometry[2], design.TopBarS.Geometry[1]).
+		Flags(defaultFlags).
+		Layout()
 
 	giu.Window("Bottom Bar").
 		Size(design.BottomBarS.Geometry[0], design.BottomBarS.Geometry[1]).
@@ -156,11 +173,11 @@ func loop() {
 	}
 
 	// The app consists of 2 main windows:
-	// "Main Menu" and "Apps Layout"
+	// "Main Menu" and "Apps AppLayout"
 	if design.SideMenuS.Toggled {
 		giu.Window("Main Menu").
 			// Size = LHN Menu-like size and position
-			Size(design.SideMenuS.Geometry[0], design.LayoutS.Geometry[1]).
+			Size(design.SideMenuS.Geometry[0], design.AppLayoutS.Geometry[1]).
 			Pos(0, design.TopBarS.Geometry[1]).
 			Flags(defaultFlags).
 			Layout(
@@ -184,188 +201,56 @@ func loop() {
 								giu.Separator(),
 							),
 
-						// LAYOUT Menu
-						giu.TreeNode("Layout").
-							Flags(giu.TreeNodeFlagsCollapsingHeader|giu.TreeNodeFlagsDefaultOpen).
-							Layout(
-								giu.Column(
-									giu.Style().
-										SetFont(smallFont).
-										To(
-											giu.Table().
-												Size(giu.Auto, 45).
-												Flags(
-													giu.TableFlagsScrollX|
-														giu.TableFlagsBorders,
-												).
-												Columns(
-													giu.TableColumn("Type").Flags(giu.TableColumnFlagsWidthStretch),
-													giu.TableColumn("Windows").Flags(giu.TableColumnFlagsWidthStretch),
-													giu.TableColumn("Orientation").Flags(giu.TableColumnFlagsWidthStretch),
-												).
-												Rows(
-
-													// TODO: Implement Iterative way to avoid redundancy
-													giu.TableRow(
-														giu.Combo("", design.LayoutS.ComboTypesOptions[design.LayoutS.TypesIndex], design.LayoutS.ComboTypesOptions, &design.LayoutS.TypesIndex).
-															Flags(giu.ComboFlagHeightSmall|giu.ComboFlagNoArrowButton).
-															Size((design.SideMenuS.Geometry[0]/3)-18).
-															OnChange(func() {
-																design.LayoutS.CurrType = design.LayoutS.ComboTypesOptions[design.LayoutS.TypesIndex]
-															}),
-
-														giu.Combo("", design.LayoutS.ComboWindowsOptions[design.LayoutS.WindowsIndex], design.LayoutS.ComboWindowsOptions, &design.LayoutS.WindowsIndex).
-															Flags(giu.ComboFlagHeightSmall|giu.ComboFlagNoArrowButton).
-															Size((design.SideMenuS.Geometry[0]/3)-18).
-															OnChange(func() {
-																design.LayoutS.CurrWindowsNo = int(design.LayoutS.WindowsIndex) + 1
-															}),
-
-														giu.Combo("", design.LayoutS.ComboDirectionOptions[design.LayoutS.DirectionsIndex], design.LayoutS.ComboDirectionOptions, &design.LayoutS.DirectionsIndex).
-															Size((design.SideMenuS.Geometry[0]/3)-18).
-															Flags(giu.ComboFlagHeightSmall|giu.ComboFlagNoArrowButton).
-															OnChange(func() {
-																design.LayoutS.CurrDirection = design.LayoutS.ComboDirectionOptions[design.LayoutS.DirectionsIndex]
-															}),
-													),
-												),
-										),
-									// The Button below triggers buildAppsLayout function,
-									// And will appear as Disabled if the combination maps are the same
-									giu.Button("waiting fix").
-										Size(giu.Auto, 25).
-										// TODO: currently on hold
-										//OnClick(buildAppsLayout).
-										Disabled(true),
-								),
-							),
-
-						giu.Style().
-							SetColor(giu.StyleColorSeparator, color.RGBA{G: 255, B: 255, A: 255}).
-							To(
-								giu.Separator(),
-							),
-
 						// APPS Menu
-						giu.TreeNode("Apps").
-							Flags(giu.TreeNodeFlagsCollapsingHeader).
-							Layout(
-								// This is where the Main Menu items is generated
-								giu.RangeBuilder("Menu", design.AppsI, func(i int, v interface{}) giu.Widget {
-									currApp := &design.AppsS.AppsList[i]
-									miniAppsI := make([]interface{}, len(currApp.MiniApps))
-									for i := range miniAppsI {
-										miniAppsI[i] = design.MiniAppI(currApp.MiniApps[i])
-									}
-									return giu.TreeNode(currApp.Name).
-										Flags(giu.TreeNodeFlagsSpanFullWidth).
-										Layout(
-											// This is where the Sub Menu for every Menu Item will be generated
-											giu.RangeBuilder("Sub Menu", miniAppsI, func(j int, v interface{}) giu.Widget {
-												currMiniApp := &currApp.MiniApps[j]
-												return giu.Row(
-													// checkbox which has green thick when checked
-													giu.Style().
-														SetColor(giu.StyleColorCheckMark, color.RGBA{G: 255, A: 255}).
-														To(
-															giu.Checkbox("", &currMiniApp.Active),
-														),
-													giu.Selectable(currMiniApp.Name).
-														OnClick(func() {
-															currMiniApp.Active = !currMiniApp.Active
-														}).
-														Selected(currMiniApp.Active),
-												)
-											}),
-										)
-								}),
-							),
+						giu.Table().
+							Flags(giu.TableFlagsBorders).
+							Columns(
+								giu.TableColumn("Categories").Flags(giu.TableColumnFlagsWidthStretch),
+								giu.TableColumn("Apps").Flags(giu.TableColumnFlagsWidthStretch),
+							).Rows(
+							buildAppsRows()...,
+						),
 					),
 			)
 	}
 }
 
-// TODO: currently on hold
-func isBuildLayoutBtnDisabled() bool {
-	res := true
-	for i := range design.LayoutS.CurrCombination {
-		if design.LayoutS.CurrCombination[i] == design.LayoutS.PrevCombination[i] {
-			res = false
-			break
+func buildAppsRows() []*giu.TableRowWidget {
+	rows := make([]*giu.TableRowWidget, len(design.AppsS.AppsList))
+
+	for i := range rows {
+		miniAppsI := make([]interface{}, len(design.AppsS.AppsList[i].MiniApps))
+		for j := range miniAppsI {
+			miniAppsI[j] = design.MiniAppI(design.AppsS.AppsList[i].MiniApps[j])
 		}
+		rows[i] = giu.TableRow(
+			giu.Label(design.AppsS.AppsList[i].Name),
+			giu.RangeBuilder("Sub Menu", miniAppsI, func(j int, v interface{}) giu.Widget {
+				return giu.Row(
+					// checkbox which has green thick when checked
+					giu.Condition(
+						design.AppsS.AppsList[i].MiniApps[j].Active,
+						giu.Layout{
+							giu.Style().
+								SetColor(giu.StyleColorText, color.RGBA{G: 255, A: 255}).
+								To(
+									giu.Selectable(design.AppsS.AppsList[i].MiniApps[j].Name).
+										OnClick(func() {
+											design.AppsS.AppsList[i].MiniApps[j].Active = !design.AppsS.AppsList[i].MiniApps[j].Active
+										}).Selected(design.AppsS.AppsList[i].MiniApps[j].Active),
+								),
+						}, giu.Layout{
+							giu.Selectable(design.AppsS.AppsList[i].MiniApps[j].Name).
+								OnClick(func() {
+									design.AppsS.AppsList[i].MiniApps[j].Active = !design.AppsS.AppsList[i].MiniApps[j].Active
+								}).Selected(design.AppsS.AppsList[i].MiniApps[j].Active),
+						},
+					),
+				)
+			}),
+		)
 	}
-	return res
-}
-
-// TODO: currently on hold
-func buildAppsLayout() {
-	if design.LayoutS.CurrCombination != nil {
-		for i := 0; i < 3; i++ {
-			design.LayoutS.PrevCombination[i] = design.LayoutS.CurrCombination[i]
-		}
-	}
-
-	design.LayoutS.CurrCombination = []string{
-		design.LayoutS.CurrType,
-		strconv.Itoa(design.LayoutS.CurrWindowsNo),
-		design.LayoutS.CurrDirection,
-	}
-
-	if design.LayoutS.CurrWindowsNo > 0 {
-		design.LayoutS.IsDashboardView = false
-	}
-
-	design.LayoutS.RunningWindows = make([]*design.Window, design.LayoutS.CurrWindowsNo)
-	for i := range design.LayoutS.RunningWindows {
-		design.LayoutS.RunningWindows[i] = &design.Window{}
-	}
-
-	switch layoutType := design.LayoutS.CurrType; layoutType {
-	case "Window":
-		switch count := design.LayoutS.CurrWindowsNo; count {
-		case 1:
-			for i := 0; i < count; i++ {
-				design.LayoutS.RunningWindows[i].Geometry = []float32{
-					design.LayoutS.Geometry[0],
-					design.LayoutS.Geometry[1],
-					design.LayoutS.Geometry[2],
-					design.LayoutS.Geometry[3],
-				}
-				design.LayoutS.RunningWindows[i].LayoutSlot = 1
-				design.LayoutS.RunningWindows[i].Title = "Dashboard"
-			}
-
-		case 2:
-			for i := range design.LayoutS.RunningWindows {
-				design.LayoutS.RunningWindows[i] = &design.Window{}
-			}
-			switch layoutDirection := design.LayoutS.CurrDirection; layoutDirection {
-
-			case "Vertical":
-				for i := range design.LayoutS.RunningWindows {
-					if i%2 == 0 {
-						design.LayoutS.RunningWindows[i].Title = fmt.Sprintf("Window %d", i+1)
-						design.LayoutS.RunningWindows[i].Geometry = []float32{
-							design.LayoutS.Geometry[0] / 2,
-							design.LayoutS.Geometry[1],
-							design.SideMenuS.Geometry[0],
-							design.TopBarS.Geometry[1],
-						}
-						design.LayoutS.RunningWindows[i].LayoutSlot = i + 1
-					} else {
-						design.LayoutS.RunningWindows[i].Title = fmt.Sprintf("Window %d", i+1)
-						design.LayoutS.RunningWindows[i].Geometry = []float32{
-							design.LayoutS.RunningWindows[0].Geometry[0],
-							design.LayoutS.RunningWindows[0].Geometry[1],
-							design.LayoutS.Geometry[0] - design.LayoutS.RunningWindows[0].Geometry[0],
-							design.TopBarS.Geometry[1],
-						}
-						design.LayoutS.RunningWindows[i].LayoutSlot = i + 1
-					}
-				}
-			}
-		}
-	}
+	return rows
 }
 
 func main() {

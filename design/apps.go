@@ -1,5 +1,7 @@
 package design
 
+import "github.com/AllenDang/giu"
+
 type AppI interface{}
 type MiniAppI interface{}
 
@@ -8,14 +10,20 @@ type Apps struct {
 }
 
 type App struct {
-	Name     string
-	Active   bool
-	MiniApps []MiniApp
+	Name        string
+	Active      bool
+	WindowIndex int
+	Screens     int
+	Current     bool
+	MiniApps    []MiniApp
+	Layout      giu.Layout
 }
 
 type MiniApp struct {
-	Name   string
-	Active bool
+	Name    string
+	Active  bool
+	Current bool
+	Screen  int
 }
 
 // appsS - The struct of the Menu
@@ -25,65 +33,87 @@ var (
 	AppsS = &Apps{
 		AppsList: []App{
 			{
-				Name:   "Geography",
-				Active: false,
+				Name:    "Text Handler",
+				Active:  true,
+				Screens: 1,
 				MiniApps: []MiniApp{
 					{
-						Name:   "All Countries",
-						Active: false,
+						Name:    "Text Editor",
+						Active:  true,
+						Current: true,
+						Screen:  1,
 					},
 					{
-						Name:   "Map",
-						Active: false,
+						Name:    "Bash Console",
+						Active:  false,
+						Current: false,
+						Screen:  1,
+					},
+					{
+						Name:    "JSON Formatter",
+						Active:  false,
+						Current: false,
+						Screen:  1,
 					},
 				},
 			},
 
 			{
-				Name:   "Dictionary",
-				Active: false,
+				Name:    "Geography",
+				Active:  false,
+				Screens: 1,
 				MiniApps: []MiniApp{
 					{
-						Name:   "English",
-						Active: false,
+						Name:    "All Countries",
+						Active:  false,
+						Current: false,
+						Screen:  1,
+					},
+					{
+						Name:    "Map",
+						Active:  false,
+						Current: false,
+						Screen:  1,
 					},
 				},
 			},
 
 			{
-				Name:   "Maths",
-				Active: false,
+				Name:    "Dictionary",
+				Active:  false,
+				Screens: 1,
 				MiniApps: []MiniApp{
 					{
-						Name:   "Calculator",
-						Active: false,
-					},
-					{
-						Name:   "Geometry",
-						Active: false,
-					},
-					{
-						Name:   "Trigonometry",
-						Active: false,
+						Name:    "English",
+						Active:  false,
+						Current: false,
+						Screen:  1,
 					},
 				},
 			},
 
 			{
-				Name:   "Text Handler",
-				Active: false,
+				Name:    "Maths",
+				Active:  false,
+				Screens: 1,
 				MiniApps: []MiniApp{
 					{
-						Name:   "Bash Console",
-						Active: false,
+						Name:    "Calculator",
+						Active:  false,
+						Current: false,
+						Screen:  1,
 					},
 					{
-						Name:   "JSON Formatter",
-						Active: false,
+						Name:    "Geometry",
+						Active:  false,
+						Current: false,
+						Screen:  1,
 					},
 					{
-						Name:   "Text Editor",
-						Active: false,
+						Name:    "Trigonometry",
+						Active:  false,
+						Current: false,
+						Screen:  1,
 					},
 				},
 			},
