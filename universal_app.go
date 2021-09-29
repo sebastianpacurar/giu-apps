@@ -6,7 +6,6 @@ import (
 	"image/color"
 	"imgui-based-app/custom-widgets"
 	"imgui-based-app/design"
-	"strconv"
 )
 
 // Data related to the App Layout handling
@@ -256,53 +255,77 @@ func loop() {
 						//	),
 
 						// APPS Menu
-						giu.TreeNode("Apps").
-							Flags(giu.TreeNodeFlagsCollapsingHeader).
-							Layout(
-								// This is where the Main Menu items is generated
-								giu.RangeBuilder("Menu", design.AppsI, func(i int, v interface{}) giu.Widget {
-									currApp := &design.AppsS.AppsList[i]
-									miniAppsI := make([]interface{}, len(currApp.MiniApps))
-									for i := range miniAppsI {
-										miniAppsI[i] = design.MiniAppI(currApp.MiniApps[i])
-									}
-									return giu.TreeNode(currApp.Name).
-										Flags(giu.TreeNodeFlagsSpanFullWidth).
-										Layout(
-											// This is where the Sub Menu for every Menu Item will be generated
-											giu.RangeBuilder("Sub Menu", miniAppsI, func(j int, v interface{}) giu.Widget {
-												currMiniApp := &currApp.MiniApps[j]
-												return giu.Row(
-													// checkbox which has green thick when checked
-													giu.Style().
-														SetColor(giu.StyleColorCheckMark, color.RGBA{G: 255, A: 255}).
-														To(
-															giu.Checkbox("", &currMiniApp.Active),
-														),
-													giu.Selectable(currMiniApp.Name).
-														OnClick(func() {
-															currMiniApp.Active = !currMiniApp.Active
-														}).
-														Selected(currMiniApp.Active),
-												)
-											}),
-										)
-								}),
-							),
+						giu.Table().
+							Flags(giu.TableFlagsBorders).
+							Columns(
+								giu.TableColumn("Categories").Flags(giu.TableColumnFlagsWidthStretch),
+								giu.TableColumn("Apps").Flags(giu.TableColumnFlagsWidthStretch),
+							).Rows(
+							buildAppsRows()...,
+						),
+						// This is where the Main Menu items is generated
+						//giu.RangeBuilder("Menu", design.AppsI, func(i int, v interface{}) giu.Widget {
+						//	currApp := &design.AppsS.AppsList[i]
+						//	miniAppsI := make([]interface{}, len(currApp.MiniApps))
+						//	for i := range miniAppsI {
+						//		miniAppsI[i] = design.MiniAppI(currApp.MiniApps[i])
+						//	}
+						//	return giu.TableRow(
+						//		currApp.Name
+						//	Flags(giu.TreeNodeFlagsSpanFullWidth).
+						//		Layout(
+						//			// This is where the Sub Menu for every Menu Item will be generated
+						//			giu.RangeBuilder("Sub Menu", miniAppsI, func(j int, v interface{}) giu.Widget {
+						//				currMiniApp := &currApp.MiniApps[j]
+						//				return giu.Row(
+						//					// checkbox which has green thick when checked
+						//					giu.Style().
+						//						SetColor(giu.StyleColorCheckMark, color.RGBA{G: 255, A: 255}).
+						//						To(
+						//							giu.Checkbox("", &currMiniApp.Active),
+						//						),
+						//					giu.Selectable(currMiniApp.Name).
+						//						OnClick(func() {
+						//							currMiniApp.Active = !currMiniApp.Active
+						//						}).
+						//						Selected(currMiniApp.Active),
+						//				)
+						//			}),
+						//		)
+						//}),
 					),
 			)
 	}
 }
 
-//TODO: very broken and easy to fix!
-func buildAppsAppLayout() {
+func buildAppsRows() []*giu.TableRowWidget {
+	rows := make([]*giu.TableRowWidget, len(design.AppsS.AppsList))
 
-	design.AppLayoutS.CurrCombination = []string{
-		strconv.Itoa(design.AppLayoutS.CurrWindowsNo),
-		design.AppLayoutS.CurrDirection,
+	for i := range rows {
+		miniAppsI := make([]interface{}, len(design.AppsS.AppsList[i].MiniApps))
+		for j := range miniAppsI {
+			miniAppsI[j] = design.MiniAppI(design.AppsS.AppsList[i].MiniApps[j])
+		}
+		rows[i] = giu.TableRow(
+			giu.Label(design.AppsS.AppsList[i].Name),
+			giu.RangeBuilder("Sub Menu", miniAppsI, func(j int, v interface{}) giu.Widget {
+				return giu.Row(
+					// checkbox which has green thick when checked
+					giu.Style().
+						SetColor(giu.StyleColorCheckMark, color.RGBA{G: 255, A: 255}).
+						To(
+							giu.Checkbox("", &design.AppsS.AppsList[i].MiniApps[j].Active),
+						),
+					giu.Selectable(design.AppsS.AppsList[i].MiniApps[j].Name).
+						OnClick(func() {
+							design.AppsS.AppsList[i].MiniApps[j].Active = !design.AppsS.AppsList[i].MiniApps[j].Active
+						}).
+						Selected(design.AppsS.AppsList[i].MiniApps[j].Active),
+				)
+			}),
+		)
 	}
-
-	// TODO: Implement switch below
+	return rows
 }
 
 func main() {
